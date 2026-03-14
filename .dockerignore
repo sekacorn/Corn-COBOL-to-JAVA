@@ -1,0 +1,58 @@
+# Build artifacts
+target/
+*/target/
+*.jar
+*.war
+*.ear
+*.class
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+.project
+.classpath
+.settings/
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Documentation (not needed in image)
+docs/
+*.md
+LICENSE
+
+# Test files
+*/src/test/
+
+# Scripts (already have entrypoint)
+*.sh
+*.bat
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Maven wrapper (using system maven)
+.mvn/
+mvnw
+mvnw.cmd
+
+# Logs
+*.log
+logs/
+
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*~

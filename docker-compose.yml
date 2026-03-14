@@ -1,0 +1,75 @@
+# ============================================================================
+# Corn COBOL-to-Java Compiler - Docker Compose Configuration
+# Author: Sekacorn
+# Created: 2025-01-10
+# License: Commercial - See LICENSE
+# ============================================================================
+
+version: '3.8'
+
+services:
+  corn-compiler:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: corn-cobol-to-java:latest
+    container_name: corn-compiler
+
+    # Environment variables
+    environment:
+      - JAVA_OPTS=-Xmx4g -Xms1g
+      - CORN_HOME=/app
+
+    # Volume mounts for input/output
+    volumes:
+      - ./samples:/app/input:ro           # Input COBOL files (read-only)
+      - ./output:/app/output               # Generated Java files
+      - ./config:/app/config:ro            # Configuration files (read-only)
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 4G
+        reservations:
+          cpus: '1'
+          memory: 1G
+
+    # Keep container running for interactive use
+    stdin_open: true
+    tty: true
+
+    # Example: translate a COBOL file
+    # Uncomment and modify as needed
+    # command: translate /app/input/BANK-ACCOUNT.cbl --output /app/output --level 2 --format java
+
+  # Optional: Web UI service (future implementation)
+  # corn-web:
+  #   build:
+  #     context: .
+  #     dockerfile: Dockerfile.web
+  #   image: corn-web:latest
+  #   container_name: corn-web
+  #   ports:
+  #     - "8080:8080"
+  #   depends_on:
+  #     - corn-compiler
+  #   environment:
+  #     - CORN_COMPILER_HOST=corn-compiler
+  #   volumes:
+  #     - ./samples:/app/input:ro
+  #     - ./output:/app/output
+
+# Named volumes for persistent data
+volumes:
+  output:
+    driver: local
+  config:
+    driver: local
+
+# Network configuration
+networks:
+  default:
+    name: corn-network
+    driver: bridge

@@ -1,0 +1,37 @@
+# Build output
+target/
+**/target/
+
+# Maven
+.mvn/
+**/dependency-reduced-pom.xml
+
+# IDE files
+.idea/
+.vscode/
+*.iml
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+.pytest_cache/
+
+# Java artifacts
+*.class
+*.jar
+*.war
+*.ear
+
+# Project-generated outputs
+corn-output/
+corn-validation/
+
+# Local environment files
+.env
+.env.*
+

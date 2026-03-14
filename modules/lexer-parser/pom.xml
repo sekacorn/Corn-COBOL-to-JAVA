@@ -1,0 +1,63 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Lexer-Parser Module - COBOL source parsing via ANTLR4
+  Author: Sekacorn
+  Created: 2025
+  License: Corn Evaluation License - See LICENSE
+  Copyright (c) 2025-2026 Cornmeister LLC. All rights reserved.
+  Created from scratch; no third-party code copied.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.sekacorn.corn</groupId>
+        <artifactId>corn-cobol-to-java-parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+        <relativePath>../../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>corn-lexer-parser</artifactId>
+    <packaging>jar</packaging>
+
+    <name>Corn Lexer-Parser</name>
+    <description>ANTLR4-based COBOL parser producing Corn IR</description>
+
+    <dependencies>
+        <!-- Internal: IR model -->
+        <dependency>
+            <groupId>com.sekacorn.corn</groupId>
+            <artifactId>corn-ir</artifactId>
+        </dependency>
+
+        <!-- ANTLR runtime -->
+        <dependency>
+            <groupId>org.antlr</groupId>
+            <artifactId>antlr4-runtime</artifactId>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.antlr</groupId>
+                <artifactId>antlr4-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>antlr4</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <visitor>true</visitor>
+                    <listener>false</listener>
+                    <sourceDirectory>${basedir}/src/main/antlr4</sourceDirectory>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

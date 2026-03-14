@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Runtime Module - COBOL Runtime Library
+  Author: Sekacorn
+  Created: 2025
+  License: Corn Evaluation License - See LICENSE
+  Copyright (c) 2025-2026 Cornmeister LLC. All rights reserved.
+  Created from scratch; no third-party code copied.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+                             http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>com.sekacorn.corn</groupId>
+        <artifactId>corn-cobol-to-java-parent</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+        <relativePath>../../pom.xml</relativePath>
+    </parent>
+
+    <artifactId>corn-runtime-java</artifactId>
+    <packaging>jar</packaging>
+
+    <name>Corn Runtime</name>
+    <description>Minimal runtime library for COBOL semantics in Java</description>
+
+    <dependencies>
+        <!-- No external dependencies - keep it minimal -->
+    </dependencies>
+</project>
