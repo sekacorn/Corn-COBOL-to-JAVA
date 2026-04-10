@@ -29,19 +29,31 @@ What is not in this repository yet:
 
 ### CLI Help
 
-Current packaged CLI help from the shaded jar:
+The CLI banner and available commands:
 
 ![Corn CLI help](./screenshot-cli-help.png)
 
-### Translate and Validate Flow
+### Translate
 
-Sample `translate` and `validate` execution against `samples/BANK-ACCOUNT.cbl`:
+Translating 9 COBOL programs to Java with zero errors:
 
-![Corn translate and validate flow](./screenshot-translate-validate.png)
+![Corn translate flow](./screenshot-translate-validate.png)
+
+### Validate
+
+Validating the full parse-generate-compile-execute pipeline:
+
+![Corn validation](./screenshot-translate-validate%2002.png)
+
+### Analyze
+
+Analyzing COBOL source files and generating a JSON report:
+
+![Corn analyzer](./screenshot-Analyzer.png)
 
 ### Workspace Explorer
 
-The current `gui` command opens the workspace in the system file explorer:
+The `gui` command opens the workspace in the system file explorer:
 
 ![Corn workspace explorer](./screenshot-gui-explorer.png)
 
@@ -250,11 +262,10 @@ corn-cobol-to-java/
 
 ## Limitations
 
-- Only code generation level `2` is implemented.
-- Several CLI commands are intentionally lightweight and should be treated as evaluation-stage utilities, not production workflows.
-- The validation command currently checks parse/generate/compile/execute flow for generated Java and optional expected stdout fixtures, not full equivalence against executed GnuCOBOL outputs.
-- The project still has planned modules referenced in design documents that are not present in this repository.
-- The CLI version banner and some source comments still contain older commercial-license wording that should be aligned separately from this README.
+- Only code generation level `2` is implemented (levels 0, 1, 3 are planned).
+- Several CLI commands are evaluation-stage utilities, not production workflows.
+- The validation command checks parse/generate/compile/execute flow for generated Java and optional expected stdout fixtures, not full equivalence against GnuCOBOL execution outputs.
+- Planned modules (`semantics`, `transforms`, `validator`, `server`, `ui-desktop`) are not yet present in this repository.
 
 ## Licensing
 

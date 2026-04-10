@@ -16,13 +16,12 @@ modules/
 ## Current Pipeline
 
 ```text
-COBOL source
-  -> lexer/parser
-  -> IR builders
-  -> Program IR
-  -> Java code generator
-  -> generated Java source
-  -> runtime-java support library
+COBOL source (.cbl)
+  -> CobolPreprocessor (fixed-form -> free-form normalization)
+  -> ANTLR4 Lexer/Parser (CobolLexer.g4 / CobolParser.g4)
+  -> CobolIRBuildingVisitor (parse tree -> immutable IR)
+  -> JavaCodeGenerator (IR -> Java source via visitor pattern)
+  -> Generated Java (imports com.sekacorn.corn.runtime.*)
 ```
 
 ## High-Level Responsibilities
@@ -38,21 +37,29 @@ COBOL source
 - Acts as the contract between parsing and code generation
 
 ### `codegen-java`
-- Converts IR into Java classes
-- Generates Java fields from working-storage and file-section items
+- Converts IR into Java classes via `JavaCodeGenerator`, `JavaStatementVisitor`, `JavaExpressionVisitor`
+- Generates Java fields from working-storage and file-section items (`JavaFieldGenerator`)
 - Generates Java methods for paragraphs and sections
-- Emits runtime calls for COBOL-style operations such as numerics, strings, and file handling
+- Emits runtime calls for COBOL-style operations (numerics, strings, file handling)
+- Supports 28 statement types and 7 expression types with full visitor coverage
+- Proper `ON SIZE ERROR` handling with `CobolMath.Result.hasError()` checks
+- `CALL ON EXCEPTION` generates try-catch blocks
+- `PERFORM VARYING` with `BY` clause generates correct for-loops
 
 ### `runtime-java`
-- Provides Java helpers that generated code depends on
-- Includes numeric helpers, string helpers, and file abstractions
-- Includes current `INSPECT` helper implementations used by generated code
+- Provides Java helpers that generated code depends on (zero external dependencies)
+- `CobolMath`: BigDecimal-based arithmetic with 8 rounding modes, size error detection, and ANSI-85-compliant truncation (default: `RoundingMode.DOWN` without `ROUNDED`)
+- `CobolString`: `MOVE`, `INSPECT` (tallying/replacing/converting), `STRING`, `UNSTRING`, reference modification
+- `CobolFile`, `SequentialFile`, `IndexedFile`: file I/O abstractions with status codes
+- `ArithmeticContext`: captures target scale, precision, and rounding mode from PICTURE clauses
 
 ### `cli`
-- Exposes the repository through a shaded CLI jar
-- `translate` is the main end-to-end path
-- `validate` now supports parse -> generate -> compile -> execute validation for the current supported subset, with optional expected stdout fixtures
-- `analyze`, `report`, `refactor`, and `gui` are still evaluation-stage utilities rather than full enterprise workflows
+- Exposes the repository through a shaded CLI jar with branded ASCII banner
+- `translate`: main end-to-end COBOL-to-Java path (codegen level 2)
+- `validate`: parse -> generate -> compile -> execute validation with optional expected stdout fixtures
+- `analyze`: parses COBOL files and outputs JSON analysis report
+- `report`: generates HTML, JSON, or Markdown reports
+- `init`, `refactor`, `gui`: evaluation-stage utilities
 
 ## Module Dependencies
 
@@ -138,8 +145,16 @@ Run it with:
 java -jar modules/cli/target/corn-cobol-to-java.jar --help
 ```
 
+## Test Coverage
+
+The integration test suite (`CodegenIntegrationIT`) validates the full pipeline across 18 test cases:
+- Resource file tests: HELLO, ARITHMETIC, CONTROL, DATADEF, FILEIO, EVALUATE-COMPLEX, NESTED-IF, PERFORM-VARYING, STRING-OPS
+- Inline COBOL tests: display, arithmetic, if-else, perform, perform-until, on-size-error, call
+
+All tests verify exact output values, not just compilation success.
+
 ## Status
 
-- Document version: 2.1
-- Last updated: March 14, 2026
+- Document version: 3.0
+- Last updated: April 10, 2026
 - Scope: current repository implementation

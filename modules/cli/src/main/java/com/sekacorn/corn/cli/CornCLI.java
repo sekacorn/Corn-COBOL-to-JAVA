@@ -16,9 +16,21 @@ import picocli.CommandLine.HelpCommand;
  */
 @Command(
         name = "corn-cobol-to-java",
+        header = {
+                "",
+                "@|bold,yellow   ____  ___  ____  _   _ |@",
+                "@|bold,yellow  / ___|/ _ \\|  _ \\| \\ | ||@",
+                "@|bold,yellow | |  | | | | |_) |  \\| ||@",
+                "@|bold,yellow | |__| |_| |  _ <| |\\  ||@",
+                "@|bold,yellow  \\____\\___/|_| \\_\\_| \\_||@",
+                "",
+                "@|bold,cyan    COBOL  -->  Java  Transpiler|@",
+                "@|faint    Cornmeister LLC  |  v1.0.0-SNAPSHOT|@",
+                ""
+        },
         description = "COBOL-to-Java translation toolchain (evaluation edition)",
         version = "Corn COBOL-to-Java Compiler 1.0.0-SNAPSHOT\n" +
-                 "Copyright (c) 2025-2026 Cornmeister LLC\n" +
+                 "Copyright (c) 2025-2026 Cornmeister LLC (Maryland LLC)\n" +
                  "License: Corn Evaluation License (non-production)",
         mixinStandardHelpOptions = true,
         subcommands = {

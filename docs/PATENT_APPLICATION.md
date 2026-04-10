@@ -246,8 +246,9 @@ A system for preserving COBOL numeric semantics in Java comprising:
 (b) A numeric converter configured to:
     - Map COBOL numeric to Java BigDecimal
     - Set scale and precision matching COBOL specification
-    - Apply rounding mode (HALF_UP, HALF_EVEN, etc.)
-    - Handle size errors per COBOL ON SIZE ERROR clause
+    - Default to truncation (RoundingMode.DOWN) per COBOL ANSI-85 standard when ROUNDED phrase is absent
+    - Apply rounding mode (HALF_UP, HALF_EVEN, HALF_DOWN, UP, DOWN, CEILING, FLOOR, TRUNCATION) when ROUNDED is specified
+    - Handle size errors per COBOL ON SIZE ERROR clause with result capture and conditional branching
     - Implement truncation rules matching COBOL standard
 
 (c) An arithmetic operation handler configured to:
@@ -507,6 +508,6 @@ COBOL, Java, translation, compiler, semantic equivalence, validation, multi-leve
 *This patent application is a DRAFT for review purposes. Consult with a registered patent attorney before filing with USPTO.*
 
 **Document Prepared By**: Sekacorn
-**Date**: January 10, 2025
-**Version**: 1.0 DRAFT
+**Date**: January 10, 2025 (filed), April 10, 2026 (updated)
+**Version**: 1.1 DRAFT
 **File**: PATENT_APPLICATION.md

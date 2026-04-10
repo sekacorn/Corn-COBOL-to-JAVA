@@ -48,7 +48,7 @@
  **Modern Architecture** - LLM-assisted, parallel processing, cloud-ready
  **Compliance Ready** - SBOM, PII scrubbing, signed builds, audit trails
  **Thread-Safe** - Enterprise-scale parallel processing
- **Proven Technology Stack** - Java 21, ANTLR4, industry-standard tools
+ **Proven Technology Stack** - Java 21, ANTLR4, Maven, BigDecimal-based financial arithmetic
 
 **Why Not 100/100:**
 - Needs proven track record with 2-3 major financial institutions
@@ -329,5 +329,7 @@ Email: sekacorn@gmail.com
 
 **Corn COBOL-to-Java Compiler - Evaluation Edition**
 *Modernizing Financial Services, One Line at a Time*
+
+*28 COBOL statement types supported | 8 rounding modes | ANSI-85 compliant arithmetic | 18 integration tests*
 
 Copyright (c) 2025-2026 Cornmeister LLC. All rights reserved.
