@@ -2,6 +2,7 @@
 
 COBOL-to-Java translation toolchain built with Java 21 and Maven.
 
+[![CI](https://github.com/sekacorn/corn-cobol-to-java/actions/workflows/ci.yml/badge.svg)](https://github.com/sekacorn/corn-cobol-to-java/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-Evaluation-blue.svg)](LICENSE)
 [![Java](https://img.shields.io/badge/Java-21-orange.svg)](https://openjdk.org/)
 [![Build](https://img.shields.io/badge/Build-Maven-red.svg)](https://maven.apache.org/)
@@ -60,11 +61,12 @@ modules/
 Implemented pipeline:
 
 ```text
-COBOL source
-  -> lexer/parser
-  -> IR
-  -> Java code generation
-  -> Java runtime support
+COBOL source (.cbl)
+  → CobolPreprocessor (fixed-form → free-form normalization)
+  → ANTLR4 Lexer/Parser (CobolLexer.g4 / CobolParser.g4)
+  → CobolIRBuildingVisitor (parse tree → immutable IR)
+  → JavaCodeGenerator (IR → Java source via visitor pattern)
+  → Generated Java (imports com.sekacorn.corn.runtime.*)
 ```
 
 The CLI advertises four code generation levels, but only level `2` is implemented at this time. The `translate` command now fails fast for levels `0`, `1`, and `3`.
@@ -107,11 +109,67 @@ Supported MVP workflow:
 
 Supported MVP program shapes today are represented by the integration corpus in `modules/codegen-java/src/test/resources/cobol/`:
 - hello-world style programs
-- basic arithmetic
-- control flow and `PERFORM`
+- basic arithmetic (`ADD`, `SUBTRACT`, `MULTIPLY`, `DIVIDE`, `COMPUTE`)
+- control flow (`IF`/`ELSE`, `EVALUATE`/`WHEN`, nested conditionals)
+- `PERFORM` variants (simple, `UNTIL`, `VARYING`, `TIMES`)
+- `STRING`/`UNSTRING` operations
 - working-storage/data definitions
 - current file-I/O compilation path
 - current `INSPECT` support through runtime-backed code generation
+
+### COBOL Statements Supported
+
+| Category | Statements |
+|----------|-----------|
+| **Arithmetic** | `ADD`, `SUBTRACT`, `MULTIPLY`, `DIVIDE`, `COMPUTE` (with `ROUNDED` and `ON SIZE ERROR`) |
+| **Control Flow** | `IF`/`ELSE`, `EVALUATE`/`WHEN`/`WHEN OTHER`, `PERFORM` (simple, `UNTIL`, `VARYING`, `TIMES`), `GO TO`, `STOP RUN`, `EXIT`, `GOBACK` |
+| **Data Movement** | `MOVE`, `INITIALIZE`, `SET` |
+| **I/O** | `DISPLAY`, `ACCEPT` (with `FROM DATE`/`DAY`/`TIME`), `OPEN`, `CLOSE`, `READ`, `WRITE`, `REWRITE`, `DELETE`, `START` |
+| **String** | `STRING`, `UNSTRING`, `INSPECT` (`TALLYING`, `REPLACING`, `CONVERTING`) |
+| **Program** | `CALL` (with `ON EXCEPTION`), `SEARCH` |
+
+### Sample Translation
+
+**COBOL input:**
+```cobol
+       IDENTIFICATION DIVISION.
+       PROGRAM-ID. ARITHMETIC.
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+       01  WS-A       PIC 9(5) VALUE 100.
+       01  WS-B       PIC 9(5) VALUE 50.
+       01  WS-RESULT  PIC 9(5) VALUE 0.
+       PROCEDURE DIVISION.
+           ADD WS-A TO WS-B GIVING WS-RESULT.
+           DISPLAY "RESULT: " WS-RESULT.
+           STOP RUN.
+```
+
+**Generated Java:**
+```java
+package com.generated.cobol;
+import java.math.BigDecimal;
+import com.sekacorn.corn.runtime.CobolMath;
+import com.sekacorn.corn.runtime.ArithmeticContext;
+
+public class Arithmetic {
+    private BigDecimal wsA = new BigDecimal("100");
+    private BigDecimal wsB = new BigDecimal("50");
+    private BigDecimal wsResult = BigDecimal.ZERO;
+
+    public void run() { mainPara(); }
+
+    private void mainPara() {
+        wsResult = CobolMath.compute(wsA.add(wsB),
+            ArithmeticContext.ofPicture(0, 18)).getValue();
+        System.out.println(String.valueOf("RESULT: ")
+            + String.valueOf(wsResult));
+        return;
+    }
+
+    public static void main(String[] args) { new Arithmetic().run(); }
+}
+```
 
 ## Quick Start
 

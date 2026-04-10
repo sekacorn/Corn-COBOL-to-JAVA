@@ -65,11 +65,12 @@ public final class CobolMath {
     }
 
     /**
-     * Check for size error and scale result
+     * Check for size error and scale result.
+     * Uses TRUNCATION (DOWN) as the default per COBOL ANSI-85 when ROUNDED is not specified.
      */
     private static Result checkAndScale(BigDecimal value, int targetScale, int targetPrecision) {
-        // Scale to target decimal places
-        BigDecimal scaled = value.setScale(targetScale, RoundingMode.HALF_UP);
+        // Scale to target decimal places — COBOL truncates by default (no ROUNDED phrase)
+        BigDecimal scaled = value.setScale(targetScale, RoundingMode.DOWN);
 
         // Check if value fits in target precision
         int precision = scaled.precision();

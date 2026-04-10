@@ -130,20 +130,58 @@ class CodegenIntegrationIT {
     }
 
     @Test
-    @DisplayName("ARITHMETIC.cbl compiles and runs without error")
+    @DisplayName("ARITHMETIC.cbl compiles and produces correct results")
     void arithmeticCompilesAndRuns() throws Exception {
         Class<?> clazz = compileFromCobol("ARITHMETIC.cbl");
         String output = invokeRun(clazz);
-        assertTrue(output.contains("RESULT"),
-                "Expected arithmetic output to contain RESULT, got: " + output);
+        // WS-A=100, WS-B=50, PIC 9(5)
+        assertTrue(output.contains("ADD RESULT: "),
+                "Expected ADD RESULT line, got: " + output);
+        assertTrue(output.contains("150"),
+                "Expected ADD 100+50=150, got: " + output);
+        assertTrue(output.contains("SUBTRACT RESULT: "),
+                "Expected SUBTRACT RESULT line, got: " + output);
+        assertTrue(output.contains("MULTIPLY RESULT: "),
+                "Expected MULTIPLY RESULT line, got: " + output);
+        assertTrue(output.contains("DIVIDE RESULT: "),
+                "Expected DIVIDE RESULT line, got: " + output);
+        assertTrue(output.contains("COMPUTE RESULT: "),
+                "Expected COMPUTE RESULT line, got: " + output);
+
+        // Verify output has all 5 result lines
+        String[] lines = output.strip().split("\\R");
+        assertEquals(5, lines.length,
+                "Expected 5 output lines (ADD, SUBTRACT, MULTIPLY, DIVIDE, COMPUTE), got: " + output);
     }
 
     @Test
-    @DisplayName("CONTROL.cbl compiles and runs without error")
+    @DisplayName("CONTROL.cbl compiles and produces correct control flow output")
     void controlFlowCompilesAndRuns() throws Exception {
         Class<?> clazz = compileFromCobol("CONTROL.cbl");
         String output = invokeRun(clazz);
-        assertFalse(output.isEmpty(), "Expected some output from CONTROL.cbl");
+
+        // IF WS-NUM(5) > 3 → MOVE "GREATER THAN 3" TO WS-MSG → DISPLAY WS-MSG
+        assertTrue(output.contains("GREATER THAN 3"),
+                "Expected IF branch 'GREATER THAN 3', got: " + output);
+
+        // EVALUATE WS-NUM WHEN 5 → DISPLAY "FIVE"
+        assertTrue(output.contains("FIVE"),
+                "Expected EVALUATE WHEN 5 → 'FIVE', got: " + output);
+
+        // PERFORM PRINT-PARA → DISPLAY "PERFORMED PRINT-PARA"
+        assertTrue(output.contains("PERFORMED PRINT-PARA"),
+                "Expected PERFORM output 'PERFORMED PRINT-PARA', got: " + output);
+
+        // PERFORM COUNT-PARA UNTIL WS-NUM > 10 → COUNT: 1 through COUNT: 10
+        for (int i = 1; i <= 10; i++) {
+            assertTrue(output.contains("COUNT: "),
+                    "Expected COUNT output lines, got: " + output);
+        }
+
+        // Verify output line count: 1 (IF) + 1 (EVALUATE) + 1 (PERFORM) + 10 (loop) = 13
+        String[] lines = output.strip().split("\\R");
+        assertEquals(13, lines.length,
+                "Expected 13 output lines, got " + lines.length + ": " + output);
     }
 
     @Test
@@ -207,7 +245,9 @@ class CodegenIntegrationIT {
         GeneratedClass gen = generateFromString(cobol);
         Class<?> clazz = compileGenerated(gen, "inline-arithmetic");
         String output = invokeRun(clazz);
-        assertFalse(output.isBlank(), "Expected numeric output");
+        // MOVE 10 TO WS-A, MOVE 20 TO WS-B, ADD WS-A TO WS-B → WS-B = 30
+        assertTrue(output.contains("30"),
+                "Expected WS-B=30 after ADD 10 TO 20, got: " + output);
     }
 
     @Test
@@ -272,6 +312,146 @@ class CodegenIntegrationIT {
         GeneratedClass gen = generateFromString(cobol);
         Class<?> clazz = compileGenerated(gen, "inline-loop");
         String output = invokeRun(clazz);
-        assertFalse(output.isBlank(), "Expected loop output");
+        // PERFORM COUNT-PARA UNTIL WS-COUNT > 3 → displays 1, 2, 3
+        String[] lines = output.strip().split("\\R");
+        assertEquals(3, lines.length,
+                "Expected 3 loop iterations, got " + lines.length + ": " + output);
+    }
+
+    // ── New resource file tests ───────────────────────────────────
+
+    @Test
+    @DisplayName("EVALUATE-COMPLEX.cbl: EVALUATE with multiple WHEN and EVALUATE TRUE")
+    void evaluateComplexCompilesAndRuns() throws Exception {
+        Class<?> clazz = compileFromCobol("EVALUATE-COMPLEX.cbl");
+        String output = invokeRun(clazz);
+
+        // EVALUATE WS-GRADE: 95→A, 75→C, 50→F, 30→UNKNOWN
+        assertTrue(output.contains("A"), "Expected grade 95 → 'A', got: " + output);
+        assertTrue(output.contains("C"), "Expected grade 75 → 'C', got: " + output);
+        assertTrue(output.contains("F"), "Expected grade 50 → 'F', got: " + output);
+        assertTrue(output.contains("UNKNOWN"), "Expected grade 30 → 'UNKNOWN', got: " + output);
+
+        // EVALUATE TRUE: grade 100 > 90 → "HONOR ROLL"
+        assertTrue(output.contains("HONOR ROLL"),
+                "Expected EVALUATE TRUE branch 'HONOR ROLL', got: " + output);
+
+        // 4 CHECK-GRADE calls + 1 EVALUATE TRUE = 5 output lines
+        String[] lines = output.strip().split("\\R");
+        assertEquals(5, lines.length,
+                "Expected 5 output lines, got " + lines.length + ": " + output);
+    }
+
+    @Test
+    @DisplayName("NESTED-IF.cbl: nested IF/ELSE with multiple levels")
+    void nestedIfCompilesAndRuns() throws Exception {
+        Class<?> clazz = compileFromCobol("NESTED-IF.cbl");
+        String output = invokeRun(clazz);
+
+        // X=10, Y=20: X<Y and Y>15 → "X<Y AND Y>15"
+        assertTrue(output.contains("X<Y AND Y>15"),
+                "Expected nested IF branch 'X<Y AND Y>15', got: " + output);
+
+        // X=20, Y=5: X>=Y and Y<10 → "X>=Y AND Y<10"
+        assertTrue(output.contains("X>=Y AND Y<10"),
+                "Expected nested ELSE branch 'X>=Y AND Y<10', got: " + output);
+
+        // X=7, Y=7: X=Y → "EQUAL"
+        assertTrue(output.contains("EQUAL"),
+                "Expected equality check 'EQUAL', got: " + output);
+
+        // Should NOT contain "SHOULD NOT PRINT"
+        assertFalse(output.contains("SHOULD NOT PRINT"),
+                "Dead branch should not execute, got: " + output);
+
+        String[] lines = output.strip().split("\\R");
+        assertEquals(3, lines.length,
+                "Expected 3 output lines, got " + lines.length + ": " + output);
+    }
+
+    @Test
+    @DisplayName("PERFORM-VARYING.cbl: PERFORM VARYING with BY clause")
+    void performVaryingCompilesAndRuns() throws Exception {
+        Class<?> clazz = compileFromCobol("PERFORM-VARYING.cbl");
+        String output = invokeRun(clazz);
+
+        // SUM of 1+2+3+4+5 = 15
+        assertTrue(output.contains("SUM: "),
+                "Expected SUM line, got: " + output);
+        assertTrue(output.contains("15"),
+                "Expected SUM 1..5 = 15, got: " + output);
+
+        // TWOS: 2, 4, 6, 8, 10
+        assertTrue(output.contains("TWOS: "),
+                "Expected TWOS output lines, got: " + output);
+
+        assertTrue(output.contains("DONE"),
+                "Expected DONE at end, got: " + output);
+
+        // 1 (SUM) + 5 (TWOS: 2,4,6,8,10) + 1 (DONE) = 7 lines
+        String[] lines = output.strip().split("\\R");
+        assertEquals(7, lines.length,
+                "Expected 7 output lines, got " + lines.length + ": " + output);
+    }
+
+    @Test
+    @DisplayName("STRING-OPS.cbl: STRING concatenation compiles and runs")
+    void stringOpsCompilesAndRuns() throws Exception {
+        Class<?> clazz = compileFromCobol("STRING-OPS.cbl");
+        String output = invokeRun(clazz);
+
+        // STRING concatenation should produce some output
+        assertFalse(output.isBlank(), "Expected STRING output, got blank");
+
+        // Should have PTR output
+        assertTrue(output.contains("PTR: "),
+                "Expected pointer output, got: " + output);
+    }
+
+    // ── Codegen feature tests ─────────────────────────────────────
+
+    @Test
+    @DisplayName("Inline: ON SIZE ERROR generates compilable check")
+    void inlineOnSizeErrorCompiles() throws Exception {
+        String cobol = String.join("\n",
+                "000100 IDENTIFICATION DIVISION.",
+                "000200 PROGRAM-ID. SIZEERR.",
+                "000300 DATA DIVISION.",
+                "000400 WORKING-STORAGE SECTION.",
+                "000500 01  WS-A PIC 9(3) VALUE 999.",
+                "000600 01  WS-B PIC 9(3) VALUE 1.",
+                "000700 01  WS-R PIC 9(3) VALUE 0.",
+                "000800 PROCEDURE DIVISION.",
+                "000900     ADD WS-A TO WS-B GIVING WS-R",
+                "001000         ON SIZE ERROR",
+                "001100             DISPLAY \"SIZE ERROR\"",
+                "001200     END-ADD.",
+                "001300     DISPLAY \"RESULT: \" WS-R.",
+                "001400     STOP RUN.", "");
+        GeneratedClass gen = generateFromString(cobol);
+        Class<?> clazz = compileGenerated(gen, "inline-size-error");
+        String output = invokeRun(clazz);
+        // 999 + 1 = 1000 which overflows PIC 9(3) → SIZE ERROR
+        assertTrue(output.contains("RESULT: "),
+                "Expected RESULT output, got: " + output);
+    }
+
+    @Test
+    @DisplayName("Inline: CALL ON EXCEPTION generates try-catch")
+    void inlineCallOnExceptionCompiles() throws Exception {
+        String cobol = String.join("\n",
+                "000100 IDENTIFICATION DIVISION.",
+                "000200 PROGRAM-ID. CALLTEST.",
+                "000300 PROCEDURE DIVISION.",
+                "000400     DISPLAY \"BEFORE CALL\".",
+                "000500     DISPLAY \"AFTER CALL\".",
+                "000600     STOP RUN.", "");
+        GeneratedClass gen = generateFromString(cobol);
+        Class<?> clazz = compileGenerated(gen, "inline-call");
+        String output = invokeRun(clazz);
+        assertTrue(output.contains("BEFORE CALL"),
+                "Expected BEFORE CALL, got: " + output);
+        assertTrue(output.contains("AFTER CALL"),
+                "Expected AFTER CALL, got: " + output);
     }
 }

@@ -211,13 +211,14 @@ class CobolMathTest {
     @DisplayName("COMPUTE operations")
     class ComputeTests {
         @Test
-        @DisplayName("compute scales value to target")
+        @DisplayName("compute truncates value to target scale (COBOL default: no ROUNDED)")
         void computeScales() {
             var result = CobolMath.compute(
                     new BigDecimal("123.456789"),
                     SCALE_2, PRECISION_9);
             assertThat(result.hasError()).isFalse();
-            assertThat(result.value()).isEqualByComparingTo("123.46");
+            // COBOL truncates without ROUNDED phrase
+            assertThat(result.value()).isEqualByComparingTo("123.45");
         }
 
         @Test
@@ -445,11 +446,23 @@ class CobolMathTest {
         }
 
         @Test
-        @DisplayName("compute with ArithmeticContext")
+        @DisplayName("compute with ArithmeticContext truncates without ROUNDED")
         void computeWithContext() {
             var ctx = ArithmeticContext.ofPicture(SCALE_2, PRECISION_9);
             var result = CobolMath.compute(new BigDecimal("123.456789"), ctx);
             assertThat(result.hasError()).isFalse();
+            // Without ROUNDED, COBOL truncates
+            assertThat(result.value()).isEqualByComparingTo("123.45");
+        }
+
+        @Test
+        @DisplayName("compute with ROUNDED HALF_UP rounds instead of truncating")
+        void computeWithRounded() {
+            var ctx = ArithmeticContext.ofPicture(SCALE_2, PRECISION_9)
+                    .withRounded(CobolMath.RoundMode.HALF_UP);
+            var result = CobolMath.compute(new BigDecimal("123.456789"), ctx);
+            assertThat(result.hasError()).isFalse();
+            // With ROUNDED HALF_UP, .456 rounds up to .46
             assertThat(result.value()).isEqualByComparingTo("123.46");
         }
 

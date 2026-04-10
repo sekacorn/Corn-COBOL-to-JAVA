@@ -82,10 +82,10 @@ public final class JavaStatementVisitor implements StatementVisitor<Void> {
             operands += ")".repeat(stmt.operands().size() - 1);
         }
         String ctx = arithmeticContext(stmt.rounded(), stmt.roundMode());
+        boolean hasSizeError = stmt.onSizeError() != null && !stmt.onSizeError().isEmpty();
+        String lastResult = null;
 
         if (!stmt.giving().isEmpty()) {
-            // ADD a TO b GIVING c → c = a + b
-            // Combine operands with TO values into a single sum
             String toValues = stmt.to().stream()
                     .map(e -> e.accept(exprVisitor))
                     .collect(Collectors.joining(".add("));
@@ -95,17 +95,31 @@ public final class JavaStatementVisitor implements StatementVisitor<Void> {
             String allValues = operands + ".add(" + toValues + ")";
             for (Expression giving : stmt.giving()) {
                 String target = giving.accept(exprVisitor);
-                buffer.line("%s = CobolMath.compute(%s, %s).getValue();",
-                        target, allValues, ctx);
+                if (hasSizeError) {
+                    lastResult = nextTemp("arithResult");
+                    buffer.line("CobolMath.Result %s = CobolMath.compute(%s, %s);",
+                            lastResult, allValues, ctx);
+                    buffer.line("%s = %s.getValue();", target, lastResult);
+                } else {
+                    buffer.line("%s = CobolMath.compute(%s, %s).getValue();",
+                            target, allValues, ctx);
+                }
             }
         } else {
             for (Expression to : stmt.to()) {
                 String target = to.accept(exprVisitor);
-                buffer.line("%s = CobolMath.add(%s, %s, %s).getValue();",
-                        target, target, operands, ctx);
+                if (hasSizeError) {
+                    lastResult = nextTemp("arithResult");
+                    buffer.line("CobolMath.Result %s = CobolMath.add(%s, %s, %s);",
+                            lastResult, target, operands, ctx);
+                    buffer.line("%s = %s.getValue();", target, lastResult);
+                } else {
+                    buffer.line("%s = CobolMath.add(%s, %s, %s).getValue();",
+                            target, target, operands, ctx);
+                }
             }
         }
-        generateOnSizeError(stmt.onSizeError());
+        generateOnSizeError(stmt.onSizeError(), lastResult);
         return null;
     }
 
@@ -120,23 +134,39 @@ public final class JavaStatementVisitor implements StatementVisitor<Void> {
             operands += ")".repeat(stmt.operands().size() - 1);
         }
         String ctx = arithmeticContext(stmt.rounded(), stmt.roundMode());
+        boolean hasSizeError = stmt.onSizeError() != null && !stmt.onSizeError().isEmpty();
+        String lastResult = null;
 
         if (!stmt.giving().isEmpty()) {
             for (Expression giving : stmt.giving()) {
                 String from = stmt.from().isEmpty() ? "BigDecimal.ZERO"
                         : stmt.from().get(0).accept(exprVisitor);
                 String target = giving.accept(exprVisitor);
-                buffer.line("%s = CobolMath.subtract(%s, %s, %s).getValue();",
-                        target, from, operands, ctx);
+                if (hasSizeError) {
+                    lastResult = nextTemp("arithResult");
+                    buffer.line("CobolMath.Result %s = CobolMath.subtract(%s, %s, %s);",
+                            lastResult, from, operands, ctx);
+                    buffer.line("%s = %s.getValue();", target, lastResult);
+                } else {
+                    buffer.line("%s = CobolMath.subtract(%s, %s, %s).getValue();",
+                            target, from, operands, ctx);
+                }
             }
         } else {
             for (Expression from : stmt.from()) {
                 String target = from.accept(exprVisitor);
-                buffer.line("%s = CobolMath.subtract(%s, %s, %s).getValue();",
-                        target, target, operands, ctx);
+                if (hasSizeError) {
+                    lastResult = nextTemp("arithResult");
+                    buffer.line("CobolMath.Result %s = CobolMath.subtract(%s, %s, %s);",
+                            lastResult, target, operands, ctx);
+                    buffer.line("%s = %s.getValue();", target, lastResult);
+                } else {
+                    buffer.line("%s = CobolMath.subtract(%s, %s, %s).getValue();",
+                            target, target, operands, ctx);
+                }
             }
         }
-        generateOnSizeError(stmt.onSizeError());
+        generateOnSizeError(stmt.onSizeError(), lastResult);
         return null;
     }
 
@@ -147,18 +177,34 @@ public final class JavaStatementVisitor implements StatementVisitor<Void> {
         String op1 = stmt.operand1().accept(exprVisitor);
         String op2 = stmt.operand2().accept(exprVisitor);
         String ctx = arithmeticContext(stmt.rounded(), stmt.roundMode());
+        boolean hasSizeError = stmt.onSizeError() != null && !stmt.onSizeError().isEmpty();
+        String lastResult = null;
 
         if (!stmt.giving().isEmpty()) {
             for (Expression giving : stmt.giving()) {
                 String target = giving.accept(exprVisitor);
-                buffer.line("%s = CobolMath.multiply(%s, %s, %s).getValue();",
-                        target, op1, op2, ctx);
+                if (hasSizeError) {
+                    lastResult = nextTemp("arithResult");
+                    buffer.line("CobolMath.Result %s = CobolMath.multiply(%s, %s, %s);",
+                            lastResult, op1, op2, ctx);
+                    buffer.line("%s = %s.getValue();", target, lastResult);
+                } else {
+                    buffer.line("%s = CobolMath.multiply(%s, %s, %s).getValue();",
+                            target, op1, op2, ctx);
+                }
             }
         } else {
-            buffer.line("%s = CobolMath.multiply(%s, %s, %s).getValue();",
-                    op2, op1, op2, ctx);
+            if (hasSizeError) {
+                lastResult = nextTemp("arithResult");
+                buffer.line("CobolMath.Result %s = CobolMath.multiply(%s, %s, %s);",
+                        lastResult, op1, op2, ctx);
+                buffer.line("%s = %s.getValue();", op2, lastResult);
+            } else {
+                buffer.line("%s = CobolMath.multiply(%s, %s, %s).getValue();",
+                        op2, op1, op2, ctx);
+            }
         }
-        generateOnSizeError(stmt.onSizeError());
+        generateOnSizeError(stmt.onSizeError(), lastResult);
         return null;
     }
 
@@ -169,6 +215,8 @@ public final class JavaStatementVisitor implements StatementVisitor<Void> {
         String dividend = stmt.dividend().accept(exprVisitor);
         String divisor = stmt.divisor().accept(exprVisitor);
         String ctx = arithmeticContext(stmt.rounded(), stmt.roundMode());
+        boolean hasSizeError = stmt.onSizeError() != null && !stmt.onSizeError().isEmpty();
+        String lastResult = null;
 
         if (stmt.remainder() != null) {
             String divRes = nextTemp("divideResult");
@@ -185,20 +233,37 @@ public final class JavaStatementVisitor implements StatementVisitor<Void> {
             }
             String rem = stmt.remainder().accept(exprVisitor);
             buffer.line("%s = %s.getRemainder();", rem, divRes);
+            if (hasSizeError) {
+                lastResult = divRes;
+            }
         } else {
             if (!stmt.giving().isEmpty()) {
                 for (Expression giving : stmt.giving()) {
                     String target = giving.accept(exprVisitor);
-                    buffer.line("%s = CobolMath.divide(%s, %s, %s).getValue();",
-                            target, dividend, divisor, ctx);
+                    if (hasSizeError) {
+                        lastResult = nextTemp("arithResult");
+                        buffer.line("CobolMath.Result %s = CobolMath.divide(%s, %s, %s);",
+                                lastResult, dividend, divisor, ctx);
+                        buffer.line("%s = %s.getValue();", target, lastResult);
+                    } else {
+                        buffer.line("%s = CobolMath.divide(%s, %s, %s).getValue();",
+                                target, dividend, divisor, ctx);
+                    }
                 }
             } else if (stmt.into() != null) {
                 String into = stmt.into().accept(exprVisitor);
-                buffer.line("%s = CobolMath.divide(%s, %s, %s).getValue();",
-                        into, dividend, divisor, ctx);
+                if (hasSizeError) {
+                    lastResult = nextTemp("arithResult");
+                    buffer.line("CobolMath.Result %s = CobolMath.divide(%s, %s, %s);",
+                            lastResult, dividend, divisor, ctx);
+                    buffer.line("%s = %s.getValue();", into, lastResult);
+                } else {
+                    buffer.line("%s = CobolMath.divide(%s, %s, %s).getValue();",
+                            into, dividend, divisor, ctx);
+                }
             }
         }
-        generateOnSizeError(stmt.onSizeError());
+        generateOnSizeError(stmt.onSizeError(), lastResult);
         return null;
     }
 
@@ -208,13 +273,22 @@ public final class JavaStatementVisitor implements StatementVisitor<Void> {
         buffer.addImport("com.sekacorn.corn.runtime.ArithmeticContext");
         String expr = stmt.expression().accept(exprVisitor);
         String ctx = arithmeticContext(stmt.rounded(), stmt.roundMode());
+        boolean hasSizeError = stmt.onSizeError() != null && !stmt.onSizeError().isEmpty();
+        String lastResult = null;
 
         for (Expression target : stmt.targets()) {
             String targetName = target.accept(exprVisitor);
-            buffer.line("%s = CobolMath.compute(%s, %s).getValue();",
-                    targetName, expr, ctx);
+            if (hasSizeError) {
+                lastResult = nextTemp("arithResult");
+                buffer.line("CobolMath.Result %s = CobolMath.compute(%s, %s);",
+                        lastResult, expr, ctx);
+                buffer.line("%s = %s.getValue();", targetName, lastResult);
+            } else {
+                buffer.line("%s = CobolMath.compute(%s, %s).getValue();",
+                        targetName, expr, ctx);
+            }
         }
-        generateOnSizeError(stmt.onSizeError());
+        generateOnSizeError(stmt.onSizeError(), lastResult);
         return null;
     }
 
@@ -581,6 +655,12 @@ public final class JavaStatementVisitor implements StatementVisitor<Void> {
                 .map(arg -> arg.expression().accept(exprVisitor))
                 .collect(Collectors.joining(", "));
 
+        boolean hasOnException = !stmt.onException().isEmpty();
+
+        if (hasOnException) {
+            buffer.openBlock("try");
+        }
+
         buffer.line("// CALL %s", programName);
         if (stmt.returning() != null) {
             String ret = stmt.returning().accept(exprVisitor);
@@ -589,11 +669,11 @@ public final class JavaStatementVisitor implements StatementVisitor<Void> {
             buffer.line("%s.run(%s);", programName, args);
         }
 
-        if (!stmt.onException().isEmpty()) {
-            // Wrap in try-catch for ON EXCEPTION
-            // Note: The CALL line above would be inside a try block in production
-            buffer.line("// ON EXCEPTION handling:");
+        if (hasOnException) {
+            buffer.closeBlockWith("catch (Exception __callEx) {");
+            buffer.indent();
             generateStatements(stmt.onException());
+            buffer.closeBlock();
         }
         return null;
     }
@@ -770,11 +850,16 @@ public final class JavaStatementVisitor implements StatementVisitor<Void> {
         return "ArithmeticContext.ofPicture(0, 18).withRounded(CobolMath.RoundMode." + mode + ")";
     }
 
-    private void generateOnSizeError(List<Statement> onSizeError) {
-        if (onSizeError != null && !onSizeError.isEmpty()) {
-            buffer.line("// ON SIZE ERROR");
+    private void generateOnSizeError(List<Statement> onSizeError, String resultVar) {
+        if (onSizeError != null && !onSizeError.isEmpty() && resultVar != null) {
+            buffer.openBlock("if (" + resultVar + ".hasError())");
             generateStatements(onSizeError);
+            buffer.closeBlock();
         }
+    }
+
+    private void generateOnSizeError(List<Statement> onSizeError) {
+        generateOnSizeError(onSizeError, null);
     }
 
     private boolean isStringField(Expression expr) {
