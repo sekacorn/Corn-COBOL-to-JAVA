@@ -257,8 +257,6 @@ corn-cobol-to-java/
 ## Documentation
 
 - [Architecture](docs/ARCHITECTURE.md)
-- [Value Proposition](docs/VALUE_PROPOSITION.md)
-- [Patent Application](docs/PATENT_APPLICATION.md)
 
 ## Limitations
 
