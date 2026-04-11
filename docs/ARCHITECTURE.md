@@ -27,10 +27,13 @@ COBOL source (.cbl)
 ## High-Level Responsibilities
 
 ### `lexer-parser`
-- Defines the COBOL ANTLR grammars
-- Parses COBOL source into parse trees
+- Defines the COBOL ANTLR grammars targeting the ANSI-85 subset
+- `CobolPreprocessor` handles fixed-format normalization including string literal continuation across lines
+- Parses COBOL source into parse trees with word-form operators (`EQUAL`, `GREATER`, `LESS`) and symbol operators
 - Builds the IR used by the rest of the pipeline
-- Handles current parsing support for data definitions, procedure statements, conditions, file control, and `INSPECT`
+- Handles current parsing support for data definitions (including level 88 condition names with `VALUES ARE`, `THRU`/`THROUGH` ranges, signed literals), procedure statements, conditions, file control, and `INSPECT`
+- Commas and semicolons treated as optional separators (skipped by the lexer per COBOL standard)
+- Arithmetic statements support Format 1 (in-place) and Format 2 (`GIVING`), multi-target operations, per-target `ROUNDED`, and standalone `NOT ON SIZE ERROR` clauses
 
 ### `ir`
 - Defines immutable-ish domain objects for programs, divisions, statements, expressions, pictures, files, and source metadata
@@ -41,8 +44,10 @@ COBOL source (.cbl)
 - Generates Java fields from working-storage and file-section items (`JavaFieldGenerator`)
 - Generates Java methods for paragraphs and sections
 - Emits runtime calls for COBOL-style operations (numerics, strings, file handling)
-- Supports 28 statement types and 7 expression types with full visitor coverage
-- Proper `ON SIZE ERROR` handling with `CobolMath.Result.hasError()` checks
+- Supports 30+ statement types and 8 expression types with full visitor coverage
+- Proper `ON SIZE ERROR` and `NOT ON SIZE ERROR` handling with `CobolMath.Result.hasError()` checks
+- Multi-target `MULTIPLY` and `DIVIDE` with per-target `ROUNDED` support
+- `WRITE ADVANCING` and `ALTER` statement generation
 - `CALL ON EXCEPTION` generates try-catch blocks
 - `PERFORM VARYING` with `BY` clause generates correct for-loops
 
@@ -155,6 +160,6 @@ All tests verify exact output values, not just compilation success.
 
 ## Status
 
-- Document version: 3.0
-- Last updated: April 10, 2026
+- Document version: 3.1
+- Last updated: April 11, 2026
 - Scope: current repository implementation

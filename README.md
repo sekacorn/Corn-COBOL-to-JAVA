@@ -86,9 +86,12 @@ The CLI advertises four code generation levels, but only level `2` is implemente
 ## Features Available Now
 
 ### Parsing and IR
-- ANTLR4 COBOL grammar
-- Fixed-format and free-format parsing paths
+- ANTLR4 COBOL grammar targeting the ANSI-85 COBOL subset
+- Fixed-format preprocessing with string literal continuation handling
 - Data definitions, procedure statements, expressions, conditions, file control, and `INSPECT` support in the current parser/IR flow
+- Word-form comparison operators (`EQUAL`, `GREATER`, `LESS`) alongside symbol operators
+- Level 88 condition names with `VALUES ARE`, `THRU`/`THROUGH` ranges, and signed literals
+- Comma and semicolon treated as optional separators (skipped by lexer)
 
 ### Java Code Generation
 - Java source generation from parsed COBOL programs
@@ -133,12 +136,14 @@ Supported MVP program shapes today are represented by the integration corpus in 
 
 | Category | Statements |
 |----------|-----------|
-| **Arithmetic** | `ADD`, `SUBTRACT`, `MULTIPLY`, `DIVIDE`, `COMPUTE` (with `ROUNDED` and `ON SIZE ERROR`) |
-| **Control Flow** | `IF`/`ELSE`, `EVALUATE`/`WHEN`/`WHEN OTHER`, `PERFORM` (simple, `UNTIL`, `VARYING`, `TIMES`), `GO TO`, `STOP RUN`, `EXIT`, `GOBACK` |
+| **Arithmetic** | `ADD`, `SUBTRACT`, `MULTIPLY`, `DIVIDE`, `COMPUTE` (with `ROUNDED`, `ON SIZE ERROR`, `NOT ON SIZE ERROR`, multi-target, `GIVING` with per-target `ROUNDED`, Format 1 and Format 2) |
+| **Control Flow** | `IF`/`ELSE`, `EVALUATE`/`WHEN`/`WHEN OTHER`, `PERFORM` (simple, `UNTIL`, `VARYING`, `TIMES`, `TEST BEFORE`/`AFTER`), `GO TO`, `STOP RUN`, `EXIT`, `GOBACK`, `ALTER` |
 | **Data Movement** | `MOVE`, `INITIALIZE`, `SET` |
-| **I/O** | `DISPLAY`, `ACCEPT` (with `FROM DATE`/`DAY`/`TIME`), `OPEN`, `CLOSE`, `READ`, `WRITE`, `REWRITE`, `DELETE`, `START` |
+| **Data Definition** | Level 01-77 items, level 88 condition names (`VALUE`/`VALUES`, `IS`/`ARE`, `THRU`/`THROUGH` ranges, signed literals), `USAGE` shorthand, `REDEFINES`, `OCCURS`, `SIGN`, `JUSTIFIED`, `SYNCHRONIZED` |
+| **I/O** | `DISPLAY`, `ACCEPT` (with `FROM DATE`/`DAY`/`TIME`), `OPEN`, `CLOSE`, `READ`, `WRITE` (with `ADVANCING`), `REWRITE`, `DELETE`, `START` |
 | **String** | `STRING`, `UNSTRING`, `INSPECT` (`TALLYING`, `REPLACING`, `CONVERTING`) |
 | **Program** | `CALL` (with `ON EXCEPTION`), `SEARCH` |
+| **Comparison** | Symbol operators (`=`, `>`, `<`, `>=`, `<=`) and word-form operators (`EQUAL TO`, `GREATER THAN`, `LESS THAN`, `NOT EQUAL TO`) |
 
 ### Sample Translation
 
@@ -261,6 +266,7 @@ corn-cobol-to-java/
 ## Limitations
 
 - Only code generation level `2` is implemented (levels 0, 1, 3 are planned).
+- Targets the ANSI-85 COBOL subset; no EXEC CICS, EXEC SQL, or COMP-3 dialect presets.
 - Several CLI commands are evaluation-stage utilities, not production workflows.
 - The validation command checks parse/generate/compile/execute flow for generated Java and optional expected stdout fixtures, not full equivalence against GnuCOBOL execution outputs.
 - Planned modules (`semantics`, `transforms`, `validator`, `server`, `ui-desktop`) are not yet present in this repository.
