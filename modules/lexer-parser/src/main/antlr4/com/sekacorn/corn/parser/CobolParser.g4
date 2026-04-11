@@ -436,10 +436,16 @@ ifStatement
 // ─── EVALUATE ───
 
 evaluateStatement
-    : EVALUATE expression (ALSO expression)*
+    : EVALUATE evaluateSubject (ALSO evaluateSubject)*
       evaluateWhenClause+
       evaluateWhenOther?
       END_EVALUATE
+    ;
+
+evaluateSubject
+    : TRUE_KW
+    | FALSE_KW
+    | expression
     ;
 
 evaluateWhenClause
@@ -522,7 +528,7 @@ closeStatement
     ;
 
 readStatement
-    : READ IDENTIFIER RECORD? (INTO identifier)?
+    : READ IDENTIFIER NEXT? RECORD? (INTO identifier)?
       (KEY IS? identifier)?
       atEndClause?
       notAtEndClause?

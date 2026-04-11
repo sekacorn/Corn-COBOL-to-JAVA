@@ -259,8 +259,14 @@ public class StatementBuilder {
 
     private Statement buildEvaluate(CobolParser.EvaluateStatementContext ctx) {
         List<Expression> subjects = new ArrayList<>();
-        for (var expr : ctx.expression()) {
-            subjects.add(exprBuilder.buildExpression(expr));
+        for (var subj : ctx.evaluateSubject()) {
+            if (subj.TRUE_KW() != null) {
+                subjects.add(Literal.figurative(Literal.FigurativeConstant.TRUE, locationOf(subj)));
+            } else if (subj.FALSE_KW() != null) {
+                subjects.add(Literal.figurative(Literal.FigurativeConstant.FALSE, locationOf(subj)));
+            } else {
+                subjects.add(exprBuilder.buildExpression(subj.expression()));
+            }
         }
 
         List<EvaluateStatement.WhenClause> whenClauses = new ArrayList<>();

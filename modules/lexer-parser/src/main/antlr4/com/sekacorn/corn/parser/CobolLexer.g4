@@ -254,6 +254,7 @@ INITIALIZE      : 'INITIALIZE' ;
 GOBACK          : 'GOBACK' ;
 ALTER           : 'ALTER' ;
 PROCEED         : 'PROCEED' ;
+NEXT            : 'NEXT' ;
 
 // ─── FD clause keywords ───
 
