@@ -172,7 +172,7 @@ linkageSection
     ;
 
 dataItemEntry
-    : INTEGERLITERAL dataName VALUE IS?
+    : INTEGERLITERAL dataName (VALUE | VALUES) (IS | ARE)?
       valueSpec (commaOrSpace valueSpec)* DOT      # conditionNameEntry
     | levelNumber dataName dataItemClause* DOT    # regularDataItem
     ;
@@ -208,6 +208,7 @@ valueClause
 
 usageClause
     : USAGE IS? usageType
+    | usageType                   // COBOL allows COMPUTATIONAL etc. without USAGE keyword
     ;
 
 usageType
@@ -231,7 +232,7 @@ occursClause
       TIMES?
       (DEPENDING ON? IDENTIFIER)?
       ((ASCENDING | DESCENDING) KEY? IS? IDENTIFIER+)?
-      (INDEXED_BY IDENTIFIER (COMMA? IDENTIFIER)*)?
+      (INDEXED_BY IDENTIFIER (IDENTIFIER)*)?
     ;
 
 redefinesClause
@@ -255,11 +256,11 @@ synchronizedClause
     ;
 
 valueSpec
-    : literal (THRU literal)?
+    : (PLUS | MINUS)? literal ((THRU | THROUGH) (PLUS | MINUS)? literal)?
     ;
 
 commaOrSpace
-    : COMMA?
+    :   // commas are skipped by lexer; this rule is now a no-op separator
     ;
 
 // ════════════════════════════════════════════════════════
@@ -347,6 +348,7 @@ statement
     | initializeStatement
     | continueStatement
     | gobackStatement
+    | alterStatement
     ;
 
 // ─── MOVE ───
@@ -359,36 +361,51 @@ moveStatement
 
 addStatement
     : ADD expression+ TO identifier+
-      givingClause? roundedClause? onSizeErrorClause? END_ADD?
+      givingClause? roundedClause? onSizeErrorClause? notSizeErrorClause? END_ADD?
     | ADD expression+ givingClause
-      roundedClause? onSizeErrorClause? END_ADD?
+      roundedClause? onSizeErrorClause? notSizeErrorClause? END_ADD?
     ;
 
 subtractStatement
     : SUBTRACT expression+ FROM identifier+
-      givingClause? roundedClause? onSizeErrorClause? END_SUBTRACT?
+      givingClause? roundedClause? onSizeErrorClause? notSizeErrorClause? END_SUBTRACT?
     | SUBTRACT expression+ FROM expression givingClause
-      roundedClause? onSizeErrorClause? END_SUBTRACT?
+      roundedClause? onSizeErrorClause? notSizeErrorClause? END_SUBTRACT?
     ;
 
 multiplyStatement
-    : MULTIPLY expression BY expression
-      givingClause? roundedClause? onSizeErrorClause? END_MULTIPLY?
+    : MULTIPLY expression BY expression givingClause
+      roundedClause? onSizeErrorClause? notSizeErrorClause? END_MULTIPLY?
+    | MULTIPLY expression BY multiplyTarget+
+      onSizeErrorClause? notSizeErrorClause? END_MULTIPLY?
+    ;
+
+multiplyTarget
+    : identifier roundedClause?
     ;
 
 divideStatement
-    : DIVIDE expression (INTO | BY) expression
-      givingClause? remainderClause?
-      roundedClause? onSizeErrorClause? END_DIVIDE?
+    : DIVIDE expression (INTO | BY) expression givingClause remainderClause?
+      roundedClause? onSizeErrorClause? notSizeErrorClause? END_DIVIDE?
+    | DIVIDE expression INTO divideTarget+
+      onSizeErrorClause? notSizeErrorClause? END_DIVIDE?
+    ;
+
+divideTarget
+    : identifier roundedClause?
     ;
 
 computeStatement
     : COMPUTE identifier+ EQUAL expression
-      roundedClause? onSizeErrorClause? END_COMPUTE?
+      roundedClause? onSizeErrorClause? notSizeErrorClause? END_COMPUTE?
     ;
 
 givingClause
-    : GIVING identifier+
+    : GIVING givingTarget+
+    ;
+
+givingTarget
+    : identifier roundedClause?
     ;
 
 remainderClause
@@ -401,7 +418,10 @@ roundedClause
 
 onSizeErrorClause
     : ON? SIZE ERROR statement+
-      (NOT ON? SIZE ERROR statement+)?
+    ;
+
+notSizeErrorClause
+    : NOT ON? SIZE ERROR statement+
     ;
 
 // ─── IF ───
@@ -507,6 +527,7 @@ readStatement
       atEndClause?
       notAtEndClause?
       invalidKeyClause?
+      notInvalidKeyClause?
       END_READ?
     ;
 
@@ -522,10 +543,19 @@ invalidKeyClause
     : INVALID KEY? statement+
     ;
 
+notInvalidKeyClause
+    : NOT INVALID KEY? statement+
+    ;
+
 writeStatement
     : WRITE IDENTIFIER (FROM expression)?
+      writeAdvancingClause?
       invalidKeyClause?
       END_WRITE?
+    ;
+
+writeAdvancingClause
+    : (BEFORE | AFTER) ADVANCING? (expression (LINE | LINES)? | PAGE)
     ;
 
 rewriteStatement
@@ -541,7 +571,7 @@ deleteStatement
     ;
 
 startStatement
-    : START_KW IDENTIFIER (KEY IS? (EQUAL | GREATER | LESS | GREATER_EQUAL | LESS_EQUAL)? identifier)?
+    : START_KW IDENTIFIER (KEY IS? (EQUAL | EQUAL_WORD | GREATER | GREATER_WORD | LESS | LESS_WORD | GREATER_EQUAL | LESS_EQUAL)? identifier)?
       invalidKeyClause?
       END_START?
     ;
@@ -666,6 +696,12 @@ initializeStatement
     : INITIALIZE identifier+
     ;
 
+// ─── ALTER ───
+
+alterStatement
+    : ALTER (IDENTIFIER TO (PROCEED TO)? IDENTIFIER)+
+    ;
+
 // ════════════════════════════════════════════════════════
 // EXPRESSIONS & CONDITIONS
 // ════════════════════════════════════════════════════════
@@ -700,7 +736,8 @@ relationCondition
     ;
 
 relationalOperator
-    : (IS | ARE)? NOT? (GREATER THAN? | LESS THAN? | EQUAL TO?
+    : (IS | ARE)? NOT? ( GREATER_WORD THAN? | LESS_WORD THAN?
+      | EQUAL_WORD TO? | EQUAL TO?
       | GREATER_EQUAL | LESS_EQUAL | GREATER | LESS | EQUAL)
     ;
 
@@ -742,7 +779,7 @@ qualifiedTail
     ;
 
 subscriptPart
-    : LPAREN expression (COMMA? expression)* RPAREN
+    : LPAREN expression (expression)* RPAREN
     ;
 
 referenceModification
@@ -771,6 +808,6 @@ figurativeConstant
 // ─── Function calls ───
 
 functionCall
-    : FUNCTION IDENTIFIER LPAREN expression (COMMA? expression)* RPAREN
+    : FUNCTION IDENTIFIER LPAREN expression (expression)* RPAREN
     ;
 

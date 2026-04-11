@@ -127,32 +127,71 @@ public class StatementBuilder {
     }
 
     private Statement buildMultiply(CobolParser.MultiplyStatementContext ctx) {
-        Expression op1 = exprBuilder.buildExpression(ctx.expression(0));
-        Expression op2 = exprBuilder.buildExpression(ctx.expression(1));
-        List<Expression> giving = buildGiving(ctx.givingClause());
-        boolean rounded = ctx.roundedClause() != null;
+        var expressions = ctx.expression();
+        var targets = ctx.multiplyTarget();
+        Expression op1;
+        Expression op2;
+        boolean rounded;
+        List<Expression> giving;
+
+        if (expressions.size() == 2) {
+            // Format 2: MULTIPLY expr BY expr GIVING target+
+            op1 = exprBuilder.buildExpression(expressions.get(0));
+            op2 = exprBuilder.buildExpression(expressions.get(1));
+            giving = buildGiving(ctx.givingClause());
+            rounded = ctx.roundedClause() != null;
+        } else {
+            // Format 1: MULTIPLY expr BY multiplyTarget+
+            op1 = exprBuilder.buildExpression(expressions.get(0));
+            op2 = exprBuilder.buildIdentifier(targets.get(0).identifier());
+            rounded = targets.get(0).roundedClause() != null;
+            giving = buildGiving(ctx.givingClause());
+            if (targets.size() > 1) {
+                if (giving.isEmpty()) giving = new java.util.ArrayList<>();
+                for (int i = 1; i < targets.size(); i++) {
+                    giving.add(exprBuilder.buildIdentifier(targets.get(i).identifier()));
+                }
+            }
+        }
         List<Statement> onSizeError = buildSizeError(ctx.onSizeErrorClause());
         return new MultiplyStatement(op1, op2, giving, rounded, null, onSizeError, locationOf(ctx));
     }
 
     private Statement buildDivide(CobolParser.DivideStatementContext ctx) {
-        Expression left = exprBuilder.buildExpression(ctx.expression(0));
-        Expression right = exprBuilder.buildExpression(ctx.expression(1));
+        var expressions = ctx.expression();
         Expression dividend;
         Expression divisor;
         Expression into;
-        if (ctx.INTO() != null) {
-            // DIVIDE A INTO B => B = B / A
-            dividend = right;
-            divisor = left;
-            into = right;
+        List<Expression> giving;
+
+        if (expressions.size() == 2) {
+            // Format 2/3: DIVIDE expr (INTO|BY) expr GIVING target+
+            Expression left = exprBuilder.buildExpression(expressions.get(0));
+            Expression right = exprBuilder.buildExpression(expressions.get(1));
+            if (ctx.INTO() != null) {
+                dividend = right;
+                divisor = left;
+                into = right;
+            } else {
+                dividend = left;
+                divisor = right;
+                into = right;
+            }
+            giving = buildGiving(ctx.givingClause());
         } else {
-            // DIVIDE A BY B => B = A / B
-            dividend = left;
-            divisor = right;
-            into = right;
+            // Format 1: DIVIDE expr INTO divideTarget+
+            Expression left = exprBuilder.buildExpression(expressions.get(0));
+            var targets = ctx.divideTarget();
+            Expression firstTarget = exprBuilder.buildIdentifier(targets.get(0).identifier());
+            dividend = firstTarget;
+            divisor = left;
+            into = firstTarget;
+            giving = new ArrayList<>();
+            for (int i = 1; i < targets.size(); i++) {
+                giving.add(exprBuilder.buildIdentifier(targets.get(i).identifier()));
+            }
         }
-        List<Expression> giving = buildGiving(ctx.givingClause());
+
         Expression remainder = null;
         if (ctx.remainderClause() != null) {
             remainder = exprBuilder.buildIdentifier(ctx.remainderClause().identifier());
@@ -177,8 +216,8 @@ public class StatementBuilder {
     private List<Expression> buildGiving(CobolParser.GivingClauseContext ctx) {
         if (ctx == null) return Collections.emptyList();
         List<Expression> giving = new ArrayList<>();
-        for (var id : ctx.identifier()) {
-            giving.add(exprBuilder.buildIdentifier(id));
+        for (var target : ctx.givingTarget()) {
+            giving.add(exprBuilder.buildIdentifier(target.identifier()));
         }
         return giving;
     }

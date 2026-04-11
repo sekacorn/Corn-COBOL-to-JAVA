@@ -59,11 +59,36 @@ public class CobolPreprocessor {
             // Extract code area (columns 8-72)
             String codeArea = extractCodeArea(raw);
 
-            // Handle continuation lines
+            // Handle continuation lines (indicator '-')
             if (indicator == '-') {
                 if (continuationBuffer != null) {
-                    // Strip trailing spaces from previous line and append
                     String trimmed = codeArea.stripLeading();
+                    // COBOL string literal continuation: there are two cases.
+                    //
+                    // Case 1 (closed-open splice): The previous line ends
+                    // with a closing quote (e.g. VALUE "FOO") and the
+                    // continuation starts with an opening quote ("BAR").
+                    // We remove the trailing quote from the previous buffer
+                    // and the leading quote from the continuation.
+                    //
+                    // Case 2 (mid-literal): The previous line ends mid-string
+                    // (the string runs into column 72 without a closing quote)
+                    // and the continuation starts with a quote. We just remove
+                    // the opening quote on the continuation to stitch them.
+                    if (!trimmed.isEmpty() && isQuoteChar(trimmed.charAt(0))) {
+                        String bufStr = continuationBuffer.toString();
+                        // Find last non-space char in buffer
+                        int lastNonSpace = bufStr.length() - 1;
+                        while (lastNonSpace >= 0 && bufStr.charAt(lastNonSpace) == ' ') {
+                            lastNonSpace--;
+                        }
+                        if (lastNonSpace >= 0 && isQuoteChar(bufStr.charAt(lastNonSpace))) {
+                            // Case 1: previous line ended with a quote — remove it
+                            continuationBuffer.setLength(lastNonSpace);
+                        }
+                        // In both cases, skip the opening quote on continuation
+                        trimmed = trimmed.substring(1);
+                    }
                     continuationBuffer.append(trimmed);
                 }
                 continue;
@@ -110,6 +135,10 @@ public class CobolPreprocessor {
         }
 
         return String.join("\n", outputLines);
+    }
+
+    private boolean isQuoteChar(char c) {
+        return c == '"' || c == '\'';
     }
 
     /**

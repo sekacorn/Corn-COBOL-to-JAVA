@@ -252,6 +252,8 @@ DOWN            : 'DOWN' ;
 INITIALIZE      : 'INITIALIZE' ;
 
 GOBACK          : 'GOBACK' ;
+ALTER           : 'ALTER' ;
+PROCEED         : 'PROCEED' ;
 
 // ─── FD clause keywords ───
 
@@ -262,6 +264,9 @@ RECORDS         : 'RECORDS' ;
 BLOCK           : 'BLOCK' ;
 CONTAINS        : 'CONTAINS' ;
 ADVANCING       : 'ADVANCING' ;
+LINE            : 'LINE' ;
+LINES           : 'LINES' ;
+PAGE            : 'PAGE' ;
 NO              : 'NO' ;
 
 // ─── Noise words ───
@@ -308,8 +313,8 @@ FUNCTION        : 'FUNCTION' ;
 // ─── Symbols ───
 
 DOT             : '.' ;
-COMMA           : ',' ;
-SEMICOLON       : ';' ;
+COMMA           : ',' -> skip ;
+SEMICOLON       : ';' -> skip ;
 COLON           : ':' ;
 LPAREN          : '(' ;
 RPAREN          : ')' ;
@@ -318,6 +323,9 @@ MINUS           : '-' ;
 STAR            : '*' ;
 SLASH           : '/' ;
 DOUBLESTAR      : '**' ;
+EQUAL_WORD      : 'EQUAL' ;
+GREATER_WORD    : 'GREATER' ;
+LESS_WORD       : 'LESS' ;
 EQUAL           : '=' ;
 GREATER         : '>' ;
 LESS            : '<' ;
@@ -327,7 +335,9 @@ LESS_EQUAL      : '<=' ;
 // ─── Literals ───
 
 INTEGERLITERAL  : [0-9]+ ;
-DECIMALLITERAL  : [0-9]+ '.' [0-9]+ ;
+DECIMALLITERAL  : [0-9]+ '.' [0-9]+
+                | '.' [0-9]+               // leading-dot decimal (.11111)
+                ;
 STRINGLITERAL   : '"' (~["\r\n] | '""')* '"'
                 | '\'' (~['\r\n] | '\'\'')* '\''
                 ;

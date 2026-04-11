@@ -285,13 +285,16 @@ public class ExpressionBuilder {
 
     private BinaryOp.Operator mapRelationalOperator(CobolParser.RelationalOperatorContext ctx) {
         boolean negated = ctx.NOT() != null;
-        if (ctx.EQUAL() != null) {
+        boolean hasEqual = ctx.EQUAL() != null || ctx.EQUAL_WORD() != null;
+        boolean hasGreater = ctx.GREATER() != null || ctx.GREATER_WORD() != null;
+        boolean hasLess = ctx.LESS() != null || ctx.LESS_WORD() != null;
+        if (hasEqual && !hasGreater && !hasLess) {
             return negated ? BinaryOp.Operator.NOT_EQUAL : BinaryOp.Operator.EQUAL;
         }
-        if (ctx.GREATER() != null && ctx.EQUAL() == null) {
+        if (hasGreater && !hasEqual) {
             return negated ? BinaryOp.Operator.LESS_EQUAL : BinaryOp.Operator.GREATER_THAN;
         }
-        if (ctx.LESS() != null && ctx.EQUAL() == null) {
+        if (hasLess && !hasEqual) {
             return negated ? BinaryOp.Operator.GREATER_EQUAL : BinaryOp.Operator.LESS_THAN;
         }
         if (ctx.GREATER_EQUAL() != null) {
