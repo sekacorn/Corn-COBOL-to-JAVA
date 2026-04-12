@@ -263,6 +263,21 @@ corn-cobol-to-java/
 
 - [Architecture](docs/ARCHITECTURE.md)
 
+## NIST CCVS85 Conformance
+
+The parser is tested against the US government NIST CCVS85 COBOL-85 compiler conformance test suite (415 programs across 14 categories). Current parse-and-generate pass rate:
+
+| Category | Pass | Total | Rate |
+|----------|------|-------|------|
+| NC (Nucleus) | 36 | 95 | 37.9% |
+| IC (Inter-program Communication) | 28 | 47 | 59.6% |
+| SG (Segmentation) | 3 | 13 | 23.1% |
+| OB (Obsolete) | 2 | 7 | 28.6% |
+| ST, SM, IF, IX, SQ, DB, RL, RW, CM, EX | 0 | 253 | 0.0% |
+| **Total** | **69** | **415** | **16.6%** |
+
+> Note: These results measure successful parse + Java code generation. The NIST test programs are not included in this repository.
+
 ## Limitations
 
 - Only code generation level `2` is implemented (levels 0, 1, 3 are planned).
