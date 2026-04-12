@@ -329,7 +329,7 @@ public class CobolIRBuildingVisitor extends CobolParserBaseVisitor<Object> {
         String indexedBy = null;
         // Look for indexed by identifier (appears after INDEXED BY keyword)
         var allIds = ctx.IDENTIFIER();
-        if (ctx.INDEXED_BY() != null && allIds.size() > (dependingOn != null ? 1 : 0)) {
+        if (ctx.INDEXED() != null && allIds.size() > (dependingOn != null ? 1 : 0)) {
             indexedBy = allIds.get(allIds.size() - 1).getText();
         }
         return new OccursClause(min, max, dependingOn, indexedBy);

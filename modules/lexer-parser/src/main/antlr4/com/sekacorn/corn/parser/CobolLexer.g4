@@ -99,7 +99,6 @@ TIMES           : 'TIMES' ;
 DEPENDING       : 'DEPENDING' ;
 ASCENDING       : 'ASCENDING' ;
 DESCENDING      : 'DESCENDING' ;
-INDEXED_BY      : 'INDEXED' WS+ 'BY' ;
 
 REDEFINES       : 'REDEFINES' ;
 RENAMES         : 'RENAMES' ;
@@ -344,8 +343,12 @@ STRINGLITERAL   : '"' (~["\r\n] | '""')* '"'
                 ;
 
 // ─── Identifier (COBOL words: letters, digits, hyphens) ───
+// COBOL words can start with a letter or digit, but must contain at least one
+// alphabetic character to distinguish from integer literals.
 
-IDENTIFIER      : [A-Z] [A-Z0-9-]* ;
+IDENTIFIER      : [A-Z] [A-Z0-9-]*                // letter-first (common case)
+                | [0-9]+ '-' [A-Z0-9] [A-Z0-9-]*  // digit-first with hyphen (42-DATANAMES)
+                ;
 
 // ─── Whitespace and comments ───
 

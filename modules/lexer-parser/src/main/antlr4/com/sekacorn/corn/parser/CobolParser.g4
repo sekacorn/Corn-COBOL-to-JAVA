@@ -232,7 +232,7 @@ occursClause
       TIMES?
       (DEPENDING ON? IDENTIFIER)?
       ((ASCENDING | DESCENDING) KEY? IS? IDENTIFIER+)?
-      (INDEXED_BY IDENTIFIER (IDENTIFIER)*)?
+      (INDEXED BY? IDENTIFIER (IDENTIFIER)*)?
     ;
 
 redefinesClause

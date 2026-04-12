@@ -269,12 +269,12 @@ The parser is tested against the US government NIST CCVS85 COBOL-85 compiler con
 
 | Category | Pass | Total | Rate |
 |----------|------|-------|------|
-| NC (Nucleus) | 36 | 95 | 37.9% |
+| NC (Nucleus) | 43 | 95 | 45.3% |
 | IC (Inter-program Communication) | 28 | 47 | 59.6% |
 | SG (Segmentation) | 3 | 13 | 23.1% |
 | OB (Obsolete) | 2 | 7 | 28.6% |
 | ST, SM, IF, IX, SQ, DB, RL, RW, CM, EX | 0 | 253 | 0.0% |
-| **Total** | **69** | **415** | **16.6%** |
+| **Total** | **76** | **415** | **18.3%** |
 
 > Note: These results measure successful parse + Java code generation. The NIST test programs are not included in this repository.
 
