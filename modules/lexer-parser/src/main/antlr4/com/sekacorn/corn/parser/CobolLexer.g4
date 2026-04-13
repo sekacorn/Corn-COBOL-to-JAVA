@@ -190,6 +190,19 @@ PROGRAM         : 'PROGRAM' ;
 PARAGRAPH       : 'PARAGRAPH' ;
 // Note: SECTION already defined above
 
+DECLARATIVES    : 'DECLARATIVES' ;
+END_DECLARATIVES: 'END' WS+ 'DECLARATIVES' ;
+USE             : 'USE' ;
+GLOBAL          : 'GLOBAL' ;
+SORT            : 'SORT' ;
+MERGE           : 'MERGE' ;
+RELEASE         : 'RELEASE' ;
+RETURN_KW       : 'RETURN' ;
+END_RETURN      : 'END-RETURN' ;
+COLLATING       : 'COLLATING' ;
+ORDER           : 'ORDER' ;
+SEQUENCE        : 'SEQUENCE' ;
+
 OPEN            : 'OPEN' ;
 INPUT           : 'INPUT' ;
 OUTPUT          : 'OUTPUT' ;
@@ -277,7 +290,6 @@ OF              : 'OF' ;
 IN              : 'IN' ;
 THAN            : 'THAN' ;
 THE             : 'THE' ;
-A_KW            : 'A' ;
 
 // ─── Condition testing ───
 
@@ -347,6 +359,7 @@ STRINGLITERAL   : '"' (~["\r\n] | '""')* '"'
 // alphabetic character to distinguish from integer literals.
 
 IDENTIFIER      : [A-Z] [A-Z0-9-]*                // letter-first (common case)
+                | [0-9]+ [A-Z] [A-Z0-9-]*         // digit-first with letter (11A, 3X-FIELD)
                 | [0-9]+ '-' [A-Z0-9] [A-Z0-9-]*  // digit-first with hyphen (42-DATANAMES)
                 ;
 

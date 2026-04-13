@@ -44,12 +44,21 @@ programName
     ;
 
 identificationParagraph
-    : AUTHOR DOT? freeText DOT                  # authorParagraph
-    | DATE_WRITTEN DOT? freeText DOT             # dateWrittenParagraph
-    | DATE_COMPILED DOT? freeText DOT            # dateCompiledParagraph
-    | INSTALLATION DOT? freeText DOT             # installationParagraph
-    | SECURITY DOT? freeText DOT                 # securityParagraph
-    | REMARKS DOT? freeText DOT                  # remarksParagraph
+    : AUTHOR DOT? idParagraphSentence+           # authorParagraph
+    | DATE_WRITTEN DOT? idParagraphSentence+     # dateWrittenParagraph
+    | DATE_COMPILED DOT? idParagraphSentence+    # dateCompiledParagraph
+    | INSTALLATION DOT? idParagraphSentence+     # installationParagraph
+    | SECURITY DOT? idParagraphSentence+         # securityParagraph
+    | REMARKS DOT? idParagraphSentence+          # remarksParagraph
+    ;
+
+idParagraphSentence
+    : idParagraphWord+ DOT
+    ;
+
+idParagraphWord
+    : ~(DOT | AUTHOR | DATE_WRITTEN | DATE_COMPILED | INSTALLATION
+       | SECURITY | REMARKS | ENVIRONMENT | DATA | PROCEDURE)
     ;
 
 freeText
@@ -74,16 +83,32 @@ configurationSection
 configurationParagraph
     : SOURCE_COMPUTER DOT? freeText DOT          # sourceComputerParagraph
     | OBJECT_COMPUTER DOT? freeText DOT          # objectComputerParagraph
-    | SPECIAL_NAMES DOT? specialNameEntry* DOT    # specialNamesParagraph
+    | SPECIAL_NAMES DOT specialNameSentence*      # specialNamesParagraph
     ;
 
-specialNameEntry
-    : IDENTIFIER IS? IDENTIFIER
+specialNameSentence
+    : specialNameWord+ DOT
+    ;
+
+specialNameWord
+    : ~(DOT | SOURCE_COMPUTER | OBJECT_COMPUTER | SPECIAL_NAMES
+       | INPUT_OUTPUT | DATA | PROCEDURE | WORKING_STORAGE
+       | LINKAGE | LOCAL_STORAGE | FILE_CONTROL | FILE
+       | IDENTIFICATION | ID | ENVIRONMENT)
     ;
 
 inputOutputSection
     : INPUT_OUTPUT SECTION DOT
       fileControlParagraph?
+      ioControlParagraph?
+    ;
+
+ioControlParagraph
+    : I_O_CONTROL DOT ioControlSentence*
+    ;
+
+ioControlSentence
+    : (~(DOT | DATA | PROCEDURE | FILE | WORKING_STORAGE))+ DOT
     ;
 
 fileControlParagraph
@@ -93,18 +118,13 @@ fileControlParagraph
 
 selectClause
     : SELECT OPTIONAL? fileName=IDENTIFIER
-      ASSIGN TO? assignName
       fileControlOption*
       DOT
     ;
 
-assignName
-    : IDENTIFIER
-    | STRINGLITERAL
-    ;
-
 fileControlOption
-    : ORGANIZATION IS? fileOrganization               # organizationOption
+    : ASSIGN TO? (IDENTIFIER | STRINGLITERAL)          # assignOption
+    | ORGANIZATION IS? fileOrganization               # organizationOption
     | ACCESS MODE? IS? accessMode                      # accessModeOption
     | RECORD KEY? IS? keyName=IDENTIFIER               # recordKeyOption
     | ALTERNATE RECORD? KEY? IS? altKey=IDENTIFIER
@@ -112,6 +132,7 @@ fileControlOption
     | RELATIVE KEY? IS? relKey=IDENTIFIER              # relativeKeyOption
     | FILE_STATUS IS? statusVar=IDENTIFIER             # fileStatusOption
     | STATUS IS? statusVar=IDENTIFIER                  # statusOption
+    | fileOrganization                                 # standaloneOrganization
     ;
 
 fileOrganization
@@ -144,7 +165,7 @@ fileSection
     ;
 
 fileDescriptionEntry
-    : FD fileName=IDENTIFIER fdClause* DOT
+    : (FD | SD) fileName=IDENTIFIER fdClause* DOT
       dataItemEntry+
     ;
 
@@ -174,7 +195,10 @@ linkageSection
 dataItemEntry
     : INTEGERLITERAL dataName (VALUE | VALUES) (IS | ARE)?
       valueSpec (commaOrSpace valueSpec)* DOT      # conditionNameEntry
-    | levelNumber dataName dataItemClause* DOT    # regularDataItem
+    | levelNumber dataName dataItemClause* DOT     # regularDataItem
+    | levelNumber dataItemClause+ DOT              # fillerDataItem
+    | INTEGERLITERAL dataName RENAMES identifier
+      ((THRU | THROUGH) identifier)? DOT           # renamesEntry
     ;
 
 levelNumber
@@ -231,7 +255,7 @@ occursClause
     : OCCURS INTEGERLITERAL (TO INTEGERLITERAL)?
       TIMES?
       (DEPENDING ON? IDENTIFIER)?
-      ((ASCENDING | DESCENDING) KEY? IS? IDENTIFIER+)?
+      ((ASCENDING | DESCENDING) KEY? IS? IDENTIFIER+)*
       (INDEXED BY? IDENTIFIER (IDENTIFIER)*)?
     ;
 
@@ -240,7 +264,7 @@ redefinesClause
     ;
 
 signClause
-    : SIGN IS? (LEADING | TRAILING) (SEPARATE CHARACTER?)?
+    : (SIGN IS?)? (LEADING | TRAILING) (SEPARATE CHARACTER?)?
     ;
 
 justifiedClause
@@ -272,7 +296,26 @@ procedureDivision
       procedureUsingClause?
       procedureReturningClause?
       DOT
+      declarativesSection?
       procedureBody
+    ;
+
+declarativesSection
+    : DECLARATIVES DOT
+      declarativeSection+
+      (END_DECLARATIVES | END_KW DECLARATIVES) DOT
+    ;
+
+declarativeSection
+    : sectionName SECTION DOT
+      useStatement DOT
+      paragraph*
+    ;
+
+useStatement
+    : USE (GLOBAL?)
+      AFTER? STANDARD? (EXCEPTION | ERROR)
+      PROCEDURE ON? (IDENTIFIER+ | INPUT | OUTPUT | I_O | EXTEND)
     ;
 
 procedureUsingClause
@@ -349,6 +392,10 @@ statement
     | continueStatement
     | gobackStatement
     | alterStatement
+    | sortStatement
+    | mergeStatement
+    | releaseStatement
+    | returnStatement
     ;
 
 // ─── MOVE ───
@@ -439,7 +486,7 @@ evaluateStatement
     : EVALUATE evaluateSubject (ALSO evaluateSubject)*
       evaluateWhenClause+
       evaluateWhenOther?
-      END_EVALUATE
+      END_EVALUATE?
     ;
 
 evaluateSubject
@@ -499,6 +546,7 @@ goToStatement
 
 stopStatement
     : STOP RUN expression?
+    | STOP literal
     ;
 
 exitStatement
@@ -706,6 +754,52 @@ initializeStatement
 
 alterStatement
     : ALTER (IDENTIFIER TO (PROCEED TO)? IDENTIFIER)+
+    ;
+
+// ─── SORT / MERGE ───
+
+sortStatement
+    : SORT IDENTIFIER
+      sortKeyClause+
+      (WITH? DUPLICATES IN? ORDER?)?
+      (COLLATING? SEQUENCE? IS? IDENTIFIER)?
+      sortInputClause
+      sortOutputClause
+    ;
+
+mergeStatement
+    : MERGE IDENTIFIER
+      sortKeyClause+
+      (COLLATING? SEQUENCE? IS? IDENTIFIER)?
+      USING IDENTIFIER IDENTIFIER+
+      sortOutputClause
+    ;
+
+sortKeyClause
+    : ON? (ASCENDING | DESCENDING) KEY? IS? IDENTIFIER+
+    ;
+
+sortInputClause
+    : USING IDENTIFIER+                                   # sortUsing
+    | INPUT PROCEDURE IS? procedureRef                     # sortInputProcedure
+    ;
+
+sortOutputClause
+    : GIVING IDENTIFIER+                                   # sortGiving
+    | OUTPUT PROCEDURE IS? procedureRef                     # sortOutputProcedure
+    ;
+
+// ─── RELEASE / RETURN ───
+
+releaseStatement
+    : RELEASE IDENTIFIER (FROM expression)?
+    ;
+
+returnStatement
+    : RETURN_KW IDENTIFIER RECORD? (INTO identifier)?
+      atEndClause?
+      notAtEndClause?
+      END_RETURN?
     ;
 
 // ════════════════════════════════════════════════════════

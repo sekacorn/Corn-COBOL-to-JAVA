@@ -56,6 +56,14 @@ public class CobolPreprocessor {
                 continue;
             }
 
+            // Skip conditional compilation lines (NIST CCVS85 X-card markers)
+            // These are implementation-specific lines that should be treated
+            // as comments when not activated by the test harness.
+            if (Character.isLetter(indicator) && indicator != ' '
+                    && indicator != '-') {
+                continue;
+            }
+
             // Extract code area (columns 8-72)
             String codeArea = extractCodeArea(raw);
 

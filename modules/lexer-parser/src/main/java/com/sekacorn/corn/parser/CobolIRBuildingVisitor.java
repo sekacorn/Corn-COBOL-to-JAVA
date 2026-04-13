@@ -72,19 +72,32 @@ public class CobolIRBuildingVisitor extends CobolParserBaseVisitor<Object> {
 
         for (var para : ctx.identificationParagraph()) {
             if (para instanceof CobolParser.AuthorParagraphContext a) {
-                author = a.freeText() != null ? a.freeText().getText().trim() : "";
+                author = extractIdParagraphText(a.idParagraphSentence());
             } else if (para instanceof CobolParser.DateWrittenParagraphContext d) {
-                dateWritten = d.freeText() != null ? d.freeText().getText().trim() : "";
+                dateWritten = extractIdParagraphText(d.idParagraphSentence());
             } else if (para instanceof CobolParser.DateCompiledParagraphContext d) {
-                dateCompiled = d.freeText() != null ? d.freeText().getText().trim() : "";
+                dateCompiled = extractIdParagraphText(d.idParagraphSentence());
             } else if (para instanceof CobolParser.SecurityParagraphContext s) {
-                security = s.freeText() != null ? s.freeText().getText().trim() : "";
+                security = extractIdParagraphText(s.idParagraphSentence());
             } else if (para instanceof CobolParser.RemarksParagraphContext r) {
-                remarks = r.freeText() != null ? r.freeText().getText().trim() : "";
+                remarks = extractIdParagraphText(r.idParagraphSentence());
             }
         }
 
         return new IdentificationDivision(programId, author, dateWritten, dateCompiled, security, remarks);
+    }
+
+    private String extractIdParagraphText(List<CobolParser.IdParagraphSentenceContext> sentences) {
+        if (sentences == null || sentences.isEmpty()) return "";
+        StringBuilder sb = new StringBuilder();
+        for (var sentence : sentences) {
+            if (!sb.isEmpty()) sb.append(" ");
+            for (var word : sentence.idParagraphWord()) {
+                if (!sb.isEmpty()) sb.append(" ");
+                sb.append(word.getText());
+            }
+        }
+        return sb.toString().trim();
     }
 
     // ════════════════════════════════════════════════════════
@@ -136,7 +149,7 @@ public class CobolIRBuildingVisitor extends CobolParserBaseVisitor<Object> {
 
     private FileControlEntry buildFileControlEntry(CobolParser.SelectClauseContext ctx) {
         String name = ctx.fileName.getText();
-        String assignTo = ctx.assignName() != null ? ctx.assignName().getText().replace("\"", "") : null;
+        String assignTo = null;
 
         FileControlEntry.FileOrganization org = FileControlEntry.FileOrganization.SEQUENTIAL;
         FileControlEntry.AccessMode access = FileControlEntry.AccessMode.SEQUENTIAL;
@@ -146,12 +159,15 @@ public class CobolIRBuildingVisitor extends CobolParserBaseVisitor<Object> {
         String fileStatus = null;
 
         for (var option : ctx.fileControlOption()) {
-            if (option instanceof CobolParser.OrganizationOptionContext orgOpt) {
-                org = switch (orgOpt.fileOrganization().getText().toUpperCase()) {
-                    case "INDEXED" -> FileControlEntry.FileOrganization.INDEXED;
-                    case "RELATIVE" -> FileControlEntry.FileOrganization.RELATIVE;
-                    default -> FileControlEntry.FileOrganization.SEQUENTIAL;
-                };
+            if (option instanceof CobolParser.AssignOptionContext assignOpt) {
+                var id = assignOpt.IDENTIFIER();
+                var str = assignOpt.STRINGLITERAL();
+                if (id != null) assignTo = id.getText();
+                else if (str != null) assignTo = str.getText().replace("\"", "");
+            } else if (option instanceof CobolParser.OrganizationOptionContext orgOpt) {
+                org = mapFileOrganization(orgOpt.fileOrganization().getText());
+            } else if (option instanceof CobolParser.StandaloneOrganizationContext soOpt) {
+                org = mapFileOrganization(soOpt.fileOrganization().getText());
             } else if (option instanceof CobolParser.AccessModeOptionContext accOpt) {
                 access = switch (accOpt.accessMode().getText().toUpperCase()) {
                     case "RANDOM" -> FileControlEntry.AccessMode.RANDOM;
@@ -173,6 +189,14 @@ public class CobolIRBuildingVisitor extends CobolParserBaseVisitor<Object> {
 
         return new FileControlEntry(name, assignTo, org, access, recordKey, altKey,
                 null, relativeKey, fileStatus);
+    }
+
+    private FileControlEntry.FileOrganization mapFileOrganization(String text) {
+        return switch (text.toUpperCase()) {
+            case "INDEXED" -> FileControlEntry.FileOrganization.INDEXED;
+            case "RELATIVE" -> FileControlEntry.FileOrganization.RELATIVE;
+            default -> FileControlEntry.FileOrganization.SEQUENTIAL;
+        };
     }
 
     // ════════════════════════════════════════════════════════
@@ -216,6 +240,15 @@ public class CobolIRBuildingVisitor extends CobolParserBaseVisitor<Object> {
                 flat.add(buildFlatDataItem(reg));
             } else if (entry instanceof CobolParser.ConditionNameEntryContext cond) {
                 flat.add(buildConditionItem(cond));
+            } else if (entry instanceof CobolParser.FillerDataItemContext filler) {
+                flat.add(buildFillerDataItem(filler));
+            } else if (entry instanceof CobolParser.RenamesEntryContext ren) {
+                // Level 66 RENAMES — treat as a simple data item for now
+                int level = Integer.parseInt(ren.INTEGERLITERAL().getText());
+                String name = ren.dataName().getText();
+                flat.add(new DataItemBuilder.FlatDataItem(
+                        level, name, false, null, null, null, null, null,
+                        null, false, false, false, null));
             }
         }
 
@@ -263,6 +296,48 @@ public class CobolIRBuildingVisitor extends CobolParserBaseVisitor<Object> {
 
         return new DataItemBuilder.FlatDataItem(
                 level, name, isFiller, picture, usage, sign, value, redefines,
+                occurs, justified, blankWhenZero, synchronizedField, null);
+    }
+
+    private DataItemBuilder.FlatDataItem buildFillerDataItem(CobolParser.FillerDataItemContext ctx) {
+        int level = Integer.parseInt(ctx.levelNumber().getText());
+
+        Picture picture = null;
+        DataItem.Usage usage = null;
+        DataItem.Sign sign = null;
+        String value = null;
+        String redefines = null;
+        OccursClause occurs = null;
+        boolean justified = false;
+        boolean blankWhenZero = false;
+        boolean synchronizedField = false;
+
+        for (var clause : ctx.dataItemClause()) {
+            if (clause.picClause() != null) {
+                String picString = clause.picClause().PIC_STRING().getText().trim();
+                picture = PictureAnalyzer.analyze(picString);
+            } else if (clause.valueClause() != null) {
+                String valueSign = clause.valueClause().MINUS() != null ? "-" : "";
+                value = valueSign + extractLiteralValue(clause.valueClause().literal());
+            } else if (clause.usageClause() != null) {
+                usage = mapUsage(clause.usageClause().usageType());
+            } else if (clause.signClause() != null) {
+                sign = mapSign(clause.signClause());
+            } else if (clause.redefinesClause() != null) {
+                redefines = clause.redefinesClause().IDENTIFIER().getText();
+            } else if (clause.occursClause() != null) {
+                occurs = buildOccursClause(clause.occursClause());
+            } else if (clause.justifiedClause() != null) {
+                justified = true;
+            } else if (clause.blankWhenZeroClause() != null) {
+                blankWhenZero = true;
+            } else if (clause.synchronizedClause() != null) {
+                synchronizedField = true;
+            }
+        }
+
+        return new DataItemBuilder.FlatDataItem(
+                level, "FILLER", true, picture, usage, sign, value, redefines,
                 occurs, justified, blankWhenZero, synchronizedField, null);
     }
 

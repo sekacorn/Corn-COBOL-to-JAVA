@@ -9,6 +9,7 @@ import com.sekacorn.corn.ir.Program;
 import com.sekacorn.corn.ir.SourceMetadata;
 import org.antlr.v4.runtime.CharStreams;
 import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.atn.PredictionMode;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -72,13 +73,25 @@ public final class CobolSourceParser {
         lexer.removeErrorListeners();
         lexer.addErrorListener(errorListener);
 
-        // Parse
+        // Parse — two-stage: try fast SLL mode first, fall back to LL if needed
         CommonTokenStream tokens = new CommonTokenStream(lexer);
         CobolParser parser = new CobolParser(tokens);
         parser.removeErrorListeners();
         parser.addErrorListener(errorListener);
 
-        CobolParser.CompilationUnitContext tree = parser.compilationUnit();
+        // Stage 1: SLL mode (fast, handles most inputs correctly)
+        parser.getInterpreter().setPredictionMode(PredictionMode.SLL);
+        CobolParser.CompilationUnitContext tree;
+        try {
+            tree = parser.compilationUnit();
+        } catch (Exception e) {
+            // Stage 2: SLL failed — reset and retry with full LL prediction
+            tokens.seek(0);
+            parser.reset();
+            errorListener.getErrors().clear();
+            parser.getInterpreter().setPredictionMode(PredictionMode.LL);
+            tree = parser.compilationUnit();
+        }
         errors.addAll(errorListener.getErrors());
 
         // Build IR
