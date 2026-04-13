@@ -64,7 +64,7 @@
         <!-- <module>modules/validator</module> -->
         <!-- <module>modules/refactor-assist</module> -->
         <!-- <module>modules/ui-desktop</module> -->
-        <!-- <module>modules/server</module> -->
+        <module>modules/server</module>
         <!-- <module>modules/tooling</module> -->
     </modules>
 

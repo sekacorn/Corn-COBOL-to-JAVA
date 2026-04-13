@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CORN — COBOL-to-Java Modernization Platform</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <!-- Header -->
+  <header class="header" role="banner">
+    <div class="header-inner">
+      <div class="logo" aria-label="CORN Platform">
+        <span class="logo-icon" aria-hidden="true">&#x1F33D;</span>
+        <span class="logo-text">CORN</span>
+        <span class="logo-subtitle">COBOL-to-Java</span>
+      </div>
+      <nav class="header-meta" aria-label="Platform information">
+        <span class="badge badge-green" id="status-badge" role="status">Demo Mode</span>
+        <span class="version">v2.0.0</span>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Tab Navigation -->
+  <nav class="tab-bar" role="tablist" aria-label="Main navigation">
+    <button role="tab" class="tab active" aria-selected="true" aria-controls="panel-translate" id="tab-translate" data-tab="translate">
+      <svg class="tab-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+      Translate
+    </button>
+    <button role="tab" class="tab" aria-selected="false" aria-controls="panel-analyze" id="tab-analyze" data-tab="analyze">
+      <svg class="tab-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 21H3V3"/><path d="M18 9l-5 5-2-2-4 4"/></svg>
+      Analyze
+    </button>
+    <button role="tab" class="tab" aria-selected="false" aria-controls="panel-portfolio" id="tab-portfolio" data-tab="portfolio">
+      <svg class="tab-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="18" rx="2"/><path d="M8 7v10"/><path d="M12 7v10"/><path d="M16 7v10"/></svg>
+      Portfolio
+    </button>
+    <button role="tab" class="tab" aria-selected="false" aria-controls="panel-cost" id="tab-cost" data-tab="cost">
+      <svg class="tab-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v12"/><path d="M8 10h8"/><path d="M8 14h8"/></svg>
+      Cost
+    </button>
+    <button role="tab" class="tab" aria-selected="false" aria-controls="panel-trace" id="tab-trace" data-tab="trace">
+      <svg class="tab-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16"/><path d="M4 12h16"/><path d="M4 18h16"/><circle cx="8" cy="6" r="1.5" fill="currentColor"/><circle cx="14" cy="12" r="1.5" fill="currentColor"/><circle cx="10" cy="18" r="1.5" fill="currentColor"/></svg>
+      Trace
+    </button>
+  </nav>
+
+  <!-- Main Content -->
+  <main id="main-content" class="main">
+
+    <!-- Translate Panel -->
+    <section role="tabpanel" id="panel-translate" class="panel active" aria-labelledby="tab-translate">
+      <div class="panel-header">
+        <h2>Translate COBOL to Java</h2>
+        <p class="panel-desc">Paste or upload COBOL source code and generate equivalent Java output.</p>
+      </div>
+      <div class="translate-layout">
+        <div class="code-pane">
+          <div class="pane-header">
+            <label for="cobol-input" class="pane-label">COBOL Source</label>
+            <div class="pane-actions">
+              <button class="btn btn-sm btn-ghost" id="btn-load-sample" aria-label="Load sample COBOL program">Load Sample</button>
+              <label class="btn btn-sm btn-ghost" tabindex="0" role="button" aria-label="Upload COBOL file">
+                Upload
+                <input type="file" id="file-upload" accept=".cbl,.cob,.cobol,.txt" class="sr-only" aria-label="Upload COBOL source file">
+              </label>
+            </div>
+          </div>
+          <textarea id="cobol-input" class="code-editor" spellcheck="false" placeholder="       IDENTIFICATION DIVISION.&#10;       PROGRAM-ID. HELLO.&#10;       PROCEDURE DIVISION.&#10;           DISPLAY 'HELLO WORLD'.&#10;           STOP RUN." aria-label="COBOL source code input"></textarea>
+        </div>
+        <div class="translate-controls">
+          <button class="btn btn-primary btn-translate" id="btn-translate" aria-label="Translate COBOL to Java">
+            <svg class="btn-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"/><path d="M12 5l7 7-7 7"/></svg>
+            Translate
+          </button>
+        </div>
+        <div class="code-pane">
+          <div class="pane-header">
+            <span class="pane-label">Generated Java</span>
+            <div class="pane-actions">
+              <button class="btn btn-sm btn-ghost" id="btn-copy-java" aria-label="Copy Java output to clipboard" disabled>Copy</button>
+              <button class="btn btn-sm btn-ghost" id="btn-download-java" aria-label="Download Java file" disabled>Download</button>
+            </div>
+          </div>
+          <div id="java-output" class="code-output" role="region" aria-label="Generated Java output" aria-live="polite">
+            <span class="placeholder-text">Java output will appear here after translation.</span>
+          </div>
+        </div>
+      </div>
+      <div id="translate-status" class="status-bar" role="status" aria-live="polite"></div>
+    </section>
+
+    <!-- Analyze Panel -->
+    <section role="tabpanel" id="panel-analyze" class="panel" aria-labelledby="tab-analyze" hidden>
+      <div class="panel-header">
+        <h2>Code Analysis</h2>
+        <p class="panel-desc">Diagnostics, complexity metrics, and structural analysis of COBOL source.</p>
+      </div>
+      <div class="analyze-grid">
+        <div class="card">
+          <h3 class="card-title">Summary Metrics</h3>
+          <div id="analyze-summary" class="metrics-grid">
+            <div class="metric">
+              <span class="metric-value" id="metric-lines">--</span>
+              <span class="metric-label">Total Lines</span>
+            </div>
+            <div class="metric">
+              <span class="metric-value" id="metric-statements">--</span>
+              <span class="metric-label">Statements</span>
+            </div>
+            <div class="metric">
+              <span class="metric-value" id="metric-complexity">--</span>
+              <span class="metric-label">Complexity</span>
+            </div>
+            <div class="metric">
+              <span class="metric-value" id="metric-paragraphs">--</span>
+              <span class="metric-label">Paragraphs</span>
+            </div>
+            <div class="metric">
+              <span class="metric-value" id="metric-data-items">--</span>
+              <span class="metric-label">Data Items</span>
+            </div>
+            <div class="metric">
+              <span class="metric-value" id="metric-copybooks">--</span>
+              <span class="metric-label">Copybooks</span>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <h3 class="card-title">Diagnostics</h3>
+          <div id="diagnostics-list" class="diagnostics" role="list" aria-label="Diagnostic messages">
+            <p class="placeholder-text">Run a translation first to see diagnostics.</p>
+          </div>
+        </div>
+        <div class="card">
+          <h3 class="card-title">Division Breakdown</h3>
+          <div id="division-breakdown" class="breakdown-bars">
+            <p class="placeholder-text">Run a translation first to see breakdown.</p>
+          </div>
+        </div>
+        <div class="card">
+          <h3 class="card-title">Feature Usage</h3>
+          <div id="feature-usage" class="feature-tags">
+            <p class="placeholder-text">Run a translation first to see features.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Portfolio Panel -->
+    <section role="tabpanel" id="panel-portfolio" class="panel" aria-labelledby="tab-portfolio" hidden>
+      <div class="panel-header">
+        <h2>Portfolio Overview</h2>
+        <p class="panel-desc">Migration waves, risk assessment, and effort estimation for your COBOL portfolio.</p>
+      </div>
+      <div class="portfolio-stats">
+        <div class="stat-card">
+          <span class="stat-value">24</span>
+          <span class="stat-label">Total Programs</span>
+        </div>
+        <div class="stat-card stat-green">
+          <span class="stat-value">156K</span>
+          <span class="stat-label">Lines of Code</span>
+        </div>
+        <div class="stat-card stat-blue">
+          <span class="stat-value">4</span>
+          <span class="stat-label">Migration Waves</span>
+        </div>
+        <div class="stat-card stat-amber">
+          <span class="stat-value">82%</span>
+          <span class="stat-label">Auto-Translate</span>
+        </div>
+      </div>
+      <div class="portfolio-grid">
+        <div class="card card-wide">
+          <h3 class="card-title">Migration Waves</h3>
+          <div class="wave-timeline" role="list" aria-label="Migration waves">
+            <div class="wave" role="listitem">
+              <div class="wave-header">
+                <span class="wave-badge wave-0">Wave 0</span>
+                <span class="wave-title">Quick Wins</span>
+                <span class="wave-count">8 programs</span>
+              </div>
+              <div class="wave-bar"><div class="wave-fill" style="width: 100%" aria-label="100% complete"></div></div>
+              <p class="wave-desc">Simple batch programs, minimal I/O, no CICS. Fully auto-translatable.</p>
+            </div>
+            <div class="wave" role="listitem">
+              <div class="wave-header">
+                <span class="wave-badge wave-1">Wave 1</span>
+                <span class="wave-title">Core Batch</span>
+                <span class="wave-count">7 programs</span>
+              </div>
+              <div class="wave-bar"><div class="wave-fill" style="width: 85%" aria-label="85% auto-translatable"></div></div>
+              <p class="wave-desc">File I/O heavy, sequential processing. Minor manual review needed.</p>
+            </div>
+            <div class="wave" role="listitem">
+              <div class="wave-header">
+                <span class="wave-badge wave-2">Wave 2</span>
+                <span class="wave-title">Business Logic</span>
+                <span class="wave-count">6 programs</span>
+              </div>
+              <div class="wave-bar"><div class="wave-fill" style="width: 65%" aria-label="65% auto-translatable"></div></div>
+              <p class="wave-desc">Complex calculations, table handling, nested conditions. Moderate review.</p>
+            </div>
+            <div class="wave" role="listitem">
+              <div class="wave-header">
+                <span class="wave-badge wave-3">Wave 3</span>
+                <span class="wave-title">Complex Systems</span>
+                <span class="wave-count">3 programs</span>
+              </div>
+              <div class="wave-bar"><div class="wave-fill" style="width: 40%" aria-label="40% auto-translatable"></div></div>
+              <p class="wave-desc">CICS online, DB2 embedded SQL, complex copybook chains. Significant review.</p>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <h3 class="card-title">Risk Assessment</h3>
+          <table class="risk-table" aria-label="Program risk assessment">
+            <thead>
+              <tr><th scope="col">Program</th><th scope="col">Lines</th><th scope="col">Risk</th></tr>
+            </thead>
+            <tbody id="risk-table-body">
+              <tr><td>ACCT-PROC</td><td>12,400</td><td><span class="risk-badge risk-low">Low</span></td></tr>
+              <tr><td>LOAN-CALC</td><td>8,200</td><td><span class="risk-badge risk-low">Low</span></td></tr>
+              <tr><td>RPT-DAILY</td><td>3,100</td><td><span class="risk-badge risk-low">Low</span></td></tr>
+              <tr><td>TXN-VALID</td><td>15,800</td><td><span class="risk-badge risk-med">Medium</span></td></tr>
+              <tr><td>CUST-MAINT</td><td>22,600</td><td><span class="risk-badge risk-med">Medium</span></td></tr>
+              <tr><td>GL-POSTING</td><td>31,000</td><td><span class="risk-badge risk-high">High</span></td></tr>
+              <tr><td>CICS-MENU</td><td>18,400</td><td><span class="risk-badge risk-high">High</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card">
+          <h3 class="card-title">Effort Estimation</h3>
+          <div class="effort-chart" role="img" aria-label="Effort breakdown: 40% automated translation, 25% review and testing, 20% manual fixes, 15% integration testing">
+            <div class="effort-row">
+              <span class="effort-label">Auto Translate</span>
+              <div class="effort-bar"><div class="effort-fill effort-auto" style="width: 40%"></div></div>
+              <span class="effort-pct">40%</span>
+            </div>
+            <div class="effort-row">
+              <span class="effort-label">Review & Test</span>
+              <div class="effort-bar"><div class="effort-fill effort-review" style="width: 25%"></div></div>
+              <span class="effort-pct">25%</span>
+            </div>
+            <div class="effort-row">
+              <span class="effort-label">Manual Fixes</span>
+              <div class="effort-bar"><div class="effort-fill effort-manual" style="width: 20%"></div></div>
+              <span class="effort-pct">20%</span>
+            </div>
+            <div class="effort-row">
+              <span class="effort-label">Integration</span>
+              <div class="effort-bar"><div class="effort-fill effort-integ" style="width: 15%"></div></div>
+              <span class="effort-pct">15%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Cost Panel -->
+    <section role="tabpanel" id="panel-cost" class="panel" aria-labelledby="tab-cost" hidden>
+      <div class="panel-header">
+        <h2>Cost Estimator</h2>
+        <p class="panel-desc">Estimate migration costs based on portfolio size and team rates.</p>
+      </div>
+      <div class="cost-layout">
+        <div class="card">
+          <h3 class="card-title">Parameters</h3>
+          <div class="form-group">
+            <label for="cost-rate" class="form-label">Hourly Rate (USD)</label>
+            <input type="number" id="cost-rate" class="form-input" value="175" min="50" max="500" step="25" aria-describedby="cost-rate-help">
+            <span id="cost-rate-help" class="form-help">Average blended rate for development team</span>
+          </div>
+          <div class="form-group">
+            <label for="cost-loc" class="form-label">Total Lines of Code</label>
+            <input type="number" id="cost-loc" class="form-input" value="156000" min="1000" step="1000" aria-describedby="cost-loc-help">
+            <span id="cost-loc-help" class="form-help">Total COBOL lines across all programs</span>
+          </div>
+          <div class="form-group">
+            <label for="cost-programs" class="form-label">Number of Programs</label>
+            <input type="number" id="cost-programs" class="form-input" value="24" min="1" step="1">
+          </div>
+          <div class="form-group">
+            <label for="cost-complexity" class="form-label">Average Complexity</label>
+            <select id="cost-complexity" class="form-input">
+              <option value="low">Low (batch, simple I/O)</option>
+              <option value="medium" selected>Medium (business logic, file handling)</option>
+              <option value="high">High (CICS, DB2, complex logic)</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" id="btn-estimate" style="width: 100%; margin-top: 1rem;">Calculate Estimate</button>
+        </div>
+        <div class="card card-wide">
+          <h3 class="card-title">Cost Breakdown</h3>
+          <div id="cost-results" class="cost-results">
+            <div class="cost-summary">
+              <div class="cost-total">
+                <span class="cost-total-label">Total Estimated Cost</span>
+                <span class="cost-total-value" id="cost-total-value">$546,000</span>
+              </div>
+              <div class="cost-total">
+                <span class="cost-total-label">Estimated Duration</span>
+                <span class="cost-total-value" id="cost-duration-value">14 weeks</span>
+              </div>
+            </div>
+            <table class="cost-table" aria-label="Cost breakdown by phase">
+              <thead>
+                <tr><th scope="col">Phase</th><th scope="col">Hours</th><th scope="col">Cost</th><th scope="col">% of Total</th></tr>
+              </thead>
+              <tbody id="cost-table-body">
+                <tr><td>Automated Translation</td><td id="cost-h-auto">480</td><td id="cost-c-auto">$84,000</td><td>15%</td></tr>
+                <tr><td>Code Review & Validation</td><td id="cost-h-review">720</td><td id="cost-c-review">$126,000</td><td>23%</td></tr>
+                <tr><td>Manual Remediation</td><td id="cost-h-manual">640</td><td id="cost-c-manual">$112,000</td><td>21%</td></tr>
+                <tr><td>Unit Testing</td><td id="cost-h-unit">560</td><td id="cost-c-unit">$98,000</td><td>18%</td></tr>
+                <tr><td>Integration Testing</td><td id="cost-h-integ">400</td><td id="cost-c-integ">$70,000</td><td>13%</td></tr>
+                <tr><td>Deployment & Cutover</td><td id="cost-h-deploy">320</td><td id="cost-c-deploy">$56,000</td><td>10%</td></tr>
+              </tbody>
+              <tfoot>
+                <tr class="cost-total-row"><td><strong>Total</strong></td><td id="cost-h-total"><strong>3,120</strong></td><td id="cost-c-total"><strong>$546,000</strong></td><td><strong>100%</strong></td></tr>
+              </tfoot>
+            </table>
+            <div class="cost-note" role="note">
+              <strong>Note:</strong> CORN's automated translation reduces manual effort by up to 60% compared to traditional rewrite approaches. Estimates based on industry benchmarks adjusted for automation level.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Trace Panel -->
+    <section role="tabpanel" id="panel-trace" class="panel" aria-labelledby="tab-trace" hidden>
+      <div class="panel-header">
+        <h2>Execution Trace</h2>
+        <p class="panel-desc">Step-through execution trace and COBOL-to-Java diff visualization.</p>
+      </div>
+      <div class="trace-layout">
+        <div class="card card-wide">
+          <h3 class="card-title">Trace Preview</h3>
+          <div class="trace-controls">
+            <button class="btn btn-sm btn-ghost" id="btn-trace-run" aria-label="Run execution trace">Run Trace</button>
+            <button class="btn btn-sm btn-ghost" id="btn-trace-step" aria-label="Step through trace" disabled>Step</button>
+            <button class="btn btn-sm btn-ghost" id="btn-trace-reset" aria-label="Reset trace" disabled>Reset</button>
+            <span class="trace-step-info" id="trace-step-info" role="status" aria-live="polite"></span>
+          </div>
+          <div class="trace-output" id="trace-output" role="log" aria-label="Execution trace output">
+            <div class="trace-line trace-header">
+              <span class="trace-col trace-col-step">#</span>
+              <span class="trace-col trace-col-stmt">Statement</span>
+              <span class="trace-col trace-col-var">Variables</span>
+              <span class="trace-col trace-col-out">Output</span>
+            </div>
+            <p class="placeholder-text" style="padding: 1rem;">Click "Run Trace" to simulate execution.</p>
+          </div>
+        </div>
+        <div class="card card-wide">
+          <h3 class="card-title">Diff Visualization</h3>
+          <div class="diff-view" id="diff-view" role="region" aria-label="Code diff visualization">
+            <div class="diff-pane">
+              <div class="diff-pane-header">COBOL (Original)</div>
+              <pre class="diff-code" id="diff-cobol" aria-label="Original COBOL code"><code>       IDENTIFICATION DIVISION.
+       PROGRAM-ID. HELLO.
+       DATA DIVISION.
+       WORKING-STORAGE SECTION.
+       01  WS-NAME    PIC X(20) VALUE "WORLD".
+       01  WS-COUNT   PIC 9(3)  VALUE 0.
+       PROCEDURE DIVISION.
+           PERFORM VARYING WS-COUNT
+               FROM 1 BY 1 UNTIL WS-COUNT > 3
+               DISPLAY "HELLO " WS-NAME
+           END-PERFORM.
+           STOP RUN.</code></pre>
+            </div>
+            <div class="diff-pane">
+              <div class="diff-pane-header">Java (Generated)</div>
+              <pre class="diff-code" id="diff-java" aria-label="Generated Java code"><code><span class="diff-add">import com.sekacorn.corn.runtime.*;</span>
+
+<span class="diff-add">public class Hello {</span>
+    <span class="diff-change">// WS-NAME PIC X(20) VALUE "WORLD"</span>
+    <span class="diff-add">private String wsName = "WORLD";</span>
+    <span class="diff-change">// WS-COUNT PIC 9(3) VALUE 0</span>
+    <span class="diff-add">private int wsCount = 0;</span>
+
+    <span class="diff-add">public void procedureDivision() {</span>
+        <span class="diff-add">for (wsCount = 1; wsCount <= 3; wsCount++) {</span>
+            <span class="diff-add">CobolRuntime.display("HELLO " + wsName);</span>
+        <span class="diff-add">}</span>
+    <span class="diff-add">}</span>
+<span class="diff-add">}</span></code></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer" role="contentinfo">
+    <span>Cornmeister LLC</span>
+    <span aria-hidden="true">&middot;</span>
+    <span>CORN COBOL-to-Java Modernization Platform</span>
+    <span aria-hidden="true">&middot;</span>
+    <span>Demo Build</span>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
