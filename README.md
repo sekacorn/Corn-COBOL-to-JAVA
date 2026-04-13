@@ -269,12 +269,21 @@ The parser is tested against the US government NIST CCVS85 COBOL-85 compiler con
 
 | Category | Pass | Total | Rate |
 |----------|------|-------|------|
-| NC (Nucleus) | 43 | 95 | 45.3% |
-| IC (Inter-program Communication) | 28 | 47 | 59.6% |
+| RL (Relative I/O) | 18 | 26 | 69.2% |
+| SQ (Sequential I/O) | 55 | 84 | 65.5% |
+| IC (Inter-program Communication) | 30 | 47 | 63.8% |
+| IF (Intrinsic Functions) | 28 | 45 | 62.2% |
+| NC (Nucleus) | 58 | 95 | 61.1% |
+| IX (Indexed I/O) | 13 | 29 | 44.8% |
+| OB (Obsolete) | 3 | 7 | 42.9% |
+| ST (Sort/Merge) | 7 | 25 | 28.0% |
+| SM (Source Management) | 3 | 13 | 23.1% |
 | SG (Segmentation) | 3 | 13 | 23.1% |
-| OB (Obsolete) | 2 | 7 | 28.6% |
-| ST, SM, IF, IX, SQ, DB, RL, RW, CM, EX | 0 | 253 | 0.0% |
-| **Total** | **76** | **415** | **18.3%** |
+| DB (Debug) | 0 | 15 | 0.0% |
+| RW (Report Writer) | 0 | 6 | 0.0% |
+| CM (Communication) | 0 | 9 | 0.0% |
+| EX (EXEC) | 0 | 1 | 0.0% |
+| **Total** | **218** | **415** | **52.5%** |
 
 > Note: These results measure successful parse + Java code generation. The NIST test programs are not included in this repository.
 
