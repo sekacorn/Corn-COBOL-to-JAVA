@@ -271,7 +271,7 @@ The parser is validated against the US government **NIST CCVS85** COBOL-85 compi
 | **Demo Platform** | Web UI, REST API, portfolio/cost tools | Shipped |
 | **NIST 75%+** | Grammar expansion, COPY/REPLACE preprocessing | In Progress |
 | **Semantic Analysis** | Type checking, data flow, dead code detection | Private Repo |
-| **Enterprise Features** | EXEC CICS, EXEC SQL, COMP-3 dialects, multi-program | Planned |
+| **Enterprise Features** | EXEC CICS, EXEC SQL, COMP-3 dialects, multi-program | Private Repo |
 | **Production Platform** | Rust-based high-performance engine, cloud deployment | Private Repo |
 
 ---
