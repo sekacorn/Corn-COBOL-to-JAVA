@@ -21,23 +21,10 @@ Corn parses COBOL source, builds an intermediate representation, and generates c
 The `validate` command runs the full pipeline — parse, generate, compile, execute — and can compare output against expected results. Every translation is verifiable before deployment.
 
 ### ANSI-85 Compliant Arithmetic
-Financial calculations require exact numeric behavior. Corn uses `BigDecimal`-based arithmetic with 8 rounding modes, size error detection, and ANSI-85-compliant truncation to preserve COBOL's numeric guarantees.
+Financial calculations require exact numeric behavior. Corn preserves COBOL numeric guarantees with fixed-precision decimal arithmetic, rounding controls, size error detection, and ANSI-85-compliant truncation.
 
 ### Clean Intellectual Property
-Built from scratch with zero copied code from any proprietary, copyleft, or third-party COBOL implementation. All algorithms are original, based on published ANSI/ISO COBOL standards.
-
----
-
-## Technology Stack
-
-| Component | Technology |
-|-----------|------------|
-| **Language** | Java 21 |
-| **Parser** | ANTLR4 (BSD-3) |
-| **Build** | Maven |
-| **Arithmetic** | BigDecimal with 8 rounding modes |
-| **CLI** | Picocli |
-| **Testing** | JUnit 5, in-memory compilation |
+Built from scratch with zero copied code from any proprietary, copyleft, or third-party COBOL implementation. All algorithms are original, based on published ANSI/ISO COBOL standards and independent engineering.
 
 ---
 
@@ -60,22 +47,21 @@ Built from scratch with zero copied code from any proprietary, copyleft, or thir
 2. **Incremental adoption** — evaluate for free, pilot on real code, scale with confidence
 3. **Modern output** — generated Java uses current language features and clean architecture
 4. **No vendor lock-in** — you own the generated code under commercial license
-5. **Financial-grade arithmetic** — BigDecimal precision with COBOL-compliant rounding
+5. **Financial-grade arithmetic** — fixed-precision decimal behavior with COBOL-compliant rounding
+
+Corn is intended as an alternative for organizations evaluating mainframe modernization vendors. Corn is not affiliated with, endorsed by, certified by, or built from proprietary materials belonging to any established COBOL vendor or COBOL compiler project.
 
 ---
 
 ## Getting Started
 
 ```bash
-# Build
-mvn clean install
-
 # Translate COBOL to Java
-java -jar modules/cli/target/corn-cobol-to-java.jar translate ./cobol \
+corn-cobol-to-java translate ./cobol \
   --output ./output/java --codegen-level 2
 
 # Validate the full pipeline
-java -jar modules/cli/target/corn-cobol-to-java.jar validate ./cobol \
+corn-cobol-to-java validate ./cobol \
   --output ./corn-validation
 ```
 

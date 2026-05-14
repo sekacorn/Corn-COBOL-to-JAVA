@@ -4,8 +4,6 @@
 
 [![CI](https://github.com/sekacorn/corn-cobol-to-java/actions/workflows/ci.yml/badge.svg)](https://github.com/sekacorn/corn-cobol-to-java/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-Evaluation-blue.svg)](LICENSE)
-[![Java](https://img.shields.io/badge/Java-21-orange.svg)](https://openjdk.org/)
-[![Build](https://img.shields.io/badge/Build-Maven-red.svg)](https://maven.apache.org/)
 [![NIST Conformance](https://img.shields.io/badge/NIST%20CCVS85-52.5%25-brightgreen.svg)](#nist-ccvs85-conformance)
 
 ---
@@ -71,7 +69,7 @@ Step-through execution trace with variable state tracking. Side-by-side COBOL/Ja
 
 ### Implemented Today
 
-- **ANTLR4-based COBOL parser** targeting ANSI-85 with 52.5% NIST CCVS85 conformance
+- **Standards-oriented COBOL parser** targeting ANSI-85 with 52.5% NIST CCVS85 conformance
 - **Deterministic Java code generation** — same input always produces same output
 - **Full pipeline**: parse, IR, generate, compile, execute, validate
 - **40+ COBOL statement types** including arithmetic, control flow, file I/O, string operations, and INSPECT
@@ -138,22 +136,17 @@ JSON-based analysis report for every program:
 **Generated Java:**
 ```java
 package com.generated.cobol;
-import java.math.BigDecimal;
-import com.sekacorn.corn.runtime.CobolMath;
-import com.sekacorn.corn.runtime.ArithmeticContext;
 
 public class Arithmetic {
-    private BigDecimal wsA = new BigDecimal("100");
-    private BigDecimal wsB = new BigDecimal("50");
-    private BigDecimal wsResult = BigDecimal.ZERO;
+    private Decimal wsA = Decimal.of("100");
+    private Decimal wsB = Decimal.of("50");
+    private Decimal wsResult = Decimal.zero();
 
     public void run() { mainPara(); }
 
     private void mainPara() {
-        wsResult = CobolMath.compute(wsA.add(wsB),
-            ArithmeticContext.ofPicture(0, 18)).getValue();
-        System.out.println(String.valueOf("RESULT: ")
-            + String.valueOf(wsResult));
+        wsResult = wsA.add(wsB);
+        System.out.println("RESULT: " + wsResult);
         return;
     }
 
@@ -165,64 +158,51 @@ public class Arithmetic {
 
 ## Quick Start
 
-### Requirements
-
-- Java 21
-- Maven 3.8+
-
-### Build
-
-```bash
-mvn clean install
-```
-
 ### Run the Demo UI
 
 ```bash
-java -jar modules/server/target/corn-demo-server.jar
+corn-demo-server
 # Open http://localhost:8085
 ```
 
 ### Run the CLI
 
 ```bash
-java -jar modules/cli/target/corn-cobol-to-java.jar --help
+corn-cobol-to-java --help
 
 # Translate COBOL to Java
-java -jar modules/cli/target/corn-cobol-to-java.jar translate ./cobol \
+corn-cobol-to-java translate ./cobol \
   --output ./output/java --codegen-level 2
 
 # Validate the full pipeline (parse → generate → compile → execute)
-java -jar modules/cli/target/corn-cobol-to-java.jar validate ./cobol \
+corn-cobol-to-java validate ./cobol \
   --output ./corn-validation
 
 # Analyze COBOL source
-java -jar modules/cli/target/corn-cobol-to-java.jar analyze ./cobol
+corn-cobol-to-java analyze ./cobol
 ```
 
 ---
 
-## Architecture
+## Processing Model
 
 ```text
 COBOL source (.cbl)
-  → CobolPreprocessor (fixed-form → free-form normalization)
-  → ANTLR4 Lexer/Parser (CobolLexer.g4 / CobolParser.g4)
-  → CobolIRBuildingVisitor (parse tree → immutable IR)
-  → JavaCodeGenerator (IR → Java source via visitor pattern)
-  → Generated Java (imports com.sekacorn.corn.runtime.*)
+  → source normalization
+  → deterministic COBOL analysis
+  → internal program representation
+  → Java source generation
+  → validation-ready Java output
 ```
 
-### Module Structure
+### Repository Structure
 
 ```text
-modules/
-  ir/              Immutable IR: Program, DataItem, Statement (40+), Expression (8)
-  lexer-parser/    ANTLR4 grammars, CobolSourceParser, CobolPreprocessor
-  codegen-java/    JavaCodeGenerator, JavaStatementVisitor, JavaExpressionVisitor
-  runtime-java/    CobolRuntime, CobolMath, CobolString, CobolFile (zero external deps)
-  server/          Lightweight HTTP API for the demo UI (JDK HttpServer, zero extra deps)
-  cli/             Picocli CLI: translate, validate, analyze, report, init, refactor, gui
+corn-cobol-to-java/
+  demo-ui/           Evaluation UI
+  docs/              Product, compliance, and diligence documents
+  modules/           Compiler, runtime, CLI, and server implementation
+  samples/           Sample COBOL programs
 ```
 
 ---
@@ -258,8 +238,9 @@ The parser is validated against the US government **NIST CCVS85** COBOL-85 compi
 - **Section 508 / WCAG 2.1 AA** — Demo UI is accessibility-compliant with ARIA labels, keyboard navigation, skip links, and sufficient color contrast
 - **NIST CCVS85** — Parser validated against the US government COBOL-85 compiler conformance test suite
 - **NIST SP 800-218 (SSDF)** — Secure software development practices followed throughout
-- **Zero copyleft dependencies** — No GPL/LGPL/AGPL in production scope
-- **SBOM generation** — CycloneDX bill of materials generated on every build
+- **Zero copyleft dependencies** — No GPL/LGPL/AGPL/SSPL/Commons Clause in production scope
+- **Clean-room IP policy** — No copied code from proprietary or copyleft COBOL implementations
+- **SBOM generation** — bill of materials generated on every build
 
 ---
 
@@ -281,8 +262,8 @@ The parser is validated against the US government **NIST CCVS85** COBOL-85 compi
 ```text
 corn-cobol-to-java/
   demo-ui/           Web-based demo UI (HTML/CSS/JS)
-  docs/              Architecture, patent application, value proposition
-  modules/           Maven modules (ir, lexer-parser, codegen-java, runtime-java, server, cli)
+  docs/              Product, compliance, and diligence documents
+  modules/           Compiler, runtime, CLI, and server implementation
   samples/           Sample COBOL programs
   README.md
   LICENSE
@@ -291,8 +272,10 @@ corn-cobol-to-java/
 
 ## Documentation
 
-- [Architecture](docs/ARCHITECTURE.md)
 - [Value Proposition](docs/VALUE_PROPOSITION.md)
+- [IP Provenance](docs/IP_PROVENANCE.md)
+- [Dependency Policy](docs/DEPENDENCY_POLICY.md)
+- [Third-Party Notices](THIRD_PARTY_NOTICES.md)
 
 ---
 

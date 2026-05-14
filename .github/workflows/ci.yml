@@ -25,6 +25,12 @@ jobs:
           java-version: '21'
           cache: maven
 
+      - name: Generate SBOM
+        run: mvn package -B -DskipTests
+
+      - name: License scan
+        run: python scripts/check-license-sbom.py target/corn-cobol-to-java-bom.json
+
       - name: Build and verify
         run: mvn verify -B -ff
 

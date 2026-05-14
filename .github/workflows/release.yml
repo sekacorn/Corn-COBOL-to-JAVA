@@ -27,6 +27,9 @@ jobs:
       - name: Build
         run: mvn package -B -DskipTests
 
+      - name: License scan
+        run: python scripts/check-license-sbom.py target/corn-cobol-to-java-bom.json
+
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
