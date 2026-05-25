@@ -29,8 +29,8 @@ public record ReleaseStatement(
     @JsonCreator
     public ReleaseStatement {
         Objects.requireNonNull(recordName);
-        atEnd = atEnd != null ? atEnd : List.of();
-        notAtEnd = notAtEnd != null ? notAtEnd : List.of();
+        atEnd = atEnd != null ? List.copyOf(atEnd) : List.of();
+        notAtEnd = notAtEnd != null ? List.copyOf(notAtEnd) : List.of();
     }
 
     @Override

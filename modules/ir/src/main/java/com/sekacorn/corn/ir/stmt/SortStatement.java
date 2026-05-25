@@ -30,9 +30,9 @@ public record SortStatement(
     @JsonCreator
     public SortStatement {
         Objects.requireNonNull(sortFile);
-        keyFields = keyFields != null ? keyFields : List.of();
-        inputFiles = inputFiles != null ? inputFiles : List.of();
-        outputFiles = outputFiles != null ? outputFiles : List.of();
+        keyFields = keyFields != null ? List.copyOf(keyFields) : List.of();
+        inputFiles = inputFiles != null ? List.copyOf(inputFiles) : List.of();
+        outputFiles = outputFiles != null ? List.copyOf(outputFiles) : List.of();
     }
 
     @Override

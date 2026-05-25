@@ -194,7 +194,7 @@ public final class CobolMath {
         }
         java.math.RoundingMode javaMode = ctx.rounded()
                 ? toJavaRoundingMode(ctx.roundMode())
-                : java.math.RoundingMode.HALF_UP;
+                : java.math.RoundingMode.DOWN;
         BigDecimal quotient = a.divide(b, ctx.targetScale() + 2, javaMode);
         BigDecimal truncatedQuotient = quotient.setScale(0, RoundingMode.DOWN);
         BigDecimal remainder = a.subtract(truncatedQuotient.multiply(b));
@@ -251,7 +251,7 @@ public final class CobolMath {
         }
         java.math.RoundingMode javaMode = ctx.rounded()
                 ? toJavaRoundingMode(ctx.roundMode())
-                : java.math.RoundingMode.HALF_UP;
+                : java.math.RoundingMode.DOWN;
         BigDecimal quotient = a.divide(b, ctx.targetScale() + 2, javaMode);
         return applyContext(quotient, ctx);
     }

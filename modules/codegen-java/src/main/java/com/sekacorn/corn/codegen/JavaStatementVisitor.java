@@ -26,6 +26,7 @@ public final class JavaStatementVisitor implements StatementVisitor<Void> {
 
     private final JavaExpressionVisitor exprVisitor;
     private final Map<String, DataItem> dataItemMap;
+    private final Map<String, DataItem> javaFieldToDataItem;
     private final Map<String, String> fileStatusMap;
     private final CodeBuffer buffer;
     private int tempVarCounter = 0;
@@ -38,6 +39,10 @@ public final class JavaStatementVisitor implements StatementVisitor<Void> {
         this.dataItemMap = dataItemMap;
         this.fileStatusMap = fileStatusMap;
         this.buffer = buffer;
+        this.javaFieldToDataItem = new java.util.HashMap<>();
+        for (var entry : dataItemMap.entrySet()) {
+            javaFieldToDataItem.put(JavaNameMapper.toFieldName(entry.getKey()), entry.getValue());
+        }
     }
 
     /**
@@ -373,12 +378,10 @@ public final class JavaStatementVisitor implements StatementVisitor<Void> {
      * Check if a Java expression refers to a numeric (BigDecimal) value.
      */
     private boolean isNumericField(String javaExpr) {
-        for (var entry : dataItemMap.entrySet()) {
-            String fieldName = JavaNameMapper.toFieldName(entry.getKey());
-            if (fieldName.equals(javaExpr) && entry.getValue().getPicture().isPresent()) {
-                return entry.getValue().getPicture().get().getCategory()
-                        == com.sekacorn.corn.ir.Picture.PictureCategory.NUMERIC;
-            }
+        DataItem item = javaFieldToDataItem.get(javaExpr);
+        if (item != null && item.getPicture().isPresent()) {
+            return item.getPicture().get().getCategory()
+                    == com.sekacorn.corn.ir.Picture.PictureCategory.NUMERIC;
         }
         return false;
     }

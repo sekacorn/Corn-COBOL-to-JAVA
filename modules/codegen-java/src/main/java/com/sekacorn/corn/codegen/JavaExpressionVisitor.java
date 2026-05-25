@@ -106,7 +106,7 @@ public final class JavaExpressionVisitor implements ExpressionVisitor<String> {
             case MULTIPLY -> left + ".multiply(" + right + ")";
             case DIVIDE -> {
                 buffer.addImport("java.math.RoundingMode");
-                yield left + ".divide(" + right + ", 10, RoundingMode.HALF_UP)";
+                yield left + ".divide(" + right + ", 10, RoundingMode.DOWN)";
             }
             case POWER -> left + ".pow(" + right + ".intValue())";
             case EQUAL -> numericComparison
@@ -169,9 +169,9 @@ public final class JavaExpressionVisitor implements ExpressionVisitor<String> {
             case POSITIVE -> prefix + "CobolMath.isPositive(" + subject + ")";
             case NEGATIVE -> prefix + "CobolMath.isNegative(" + subject + ")";
             case ZERO -> prefix + "CobolMath.isZero(" + subject + ")";
-            case ALPHABETIC -> prefix + "String.valueOf(" + subject + ").chars().allMatch(Character::isLetter)";
-            case ALPHABETIC_LOWER -> prefix + "String.valueOf(" + subject + ").chars().allMatch(Character::isLowerCase)";
-            case ALPHABETIC_UPPER -> prefix + "String.valueOf(" + subject + ").chars().allMatch(Character::isUpperCase)";
+            case ALPHABETIC -> prefix + "String.valueOf(" + subject + ").chars().allMatch(c -> (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z') || c == ' ')";
+            case ALPHABETIC_LOWER -> prefix + "String.valueOf(" + subject + ").chars().allMatch(c -> (c >= 'a' && c <= 'z') || c == ' ')";
+            case ALPHABETIC_UPPER -> prefix + "String.valueOf(" + subject + ").chars().allMatch(c -> (c >= 'A' && c <= 'Z') || c == ' ')";
             case CONDITION_NAME -> throw new IllegalStateException("Handled above");
         };
     }
