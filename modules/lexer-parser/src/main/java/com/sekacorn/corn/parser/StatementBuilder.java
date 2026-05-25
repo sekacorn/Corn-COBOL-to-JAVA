@@ -67,6 +67,11 @@ public class StatementBuilder {
                     PerformStatement.PerformType.INLINE, null, null,
                     null, null, null, null, Collections.emptyList(), locationOf(ctx));
         }
+        if (ctx.sortStatement() != null) return buildSort(ctx.sortStatement());
+        if (ctx.mergeStatement() != null) return buildMerge(ctx.mergeStatement());
+        if (ctx.releaseStatement() != null) return buildRelease(ctx.releaseStatement());
+        if (ctx.returnStatement() != null) return buildReturn(ctx.returnStatement());
+        if (ctx.alterStatement() != null) return buildAlter(ctx.alterStatement());
         throw new IllegalStateException("Unknown statement: " + ctx.getText());
     }
 
@@ -317,8 +322,8 @@ public class StatementBuilder {
 
     private Statement buildPerformProcedure(CobolParser.PerformProcedureContext ctx) {
         var ref = ctx.procedureRef();
-        String target = ref.IDENTIFIER(0).getText();
-        String through = ref.IDENTIFIER().size() > 1 ? ref.IDENTIFIER(1).getText() : null;
+        String target = ref.procedureName(0).getText();
+        String through = ref.procedureName().size() > 1 ? ref.procedureName(1).getText() : null;
 
         if (ctx.performOption() == null) {
             return new PerformStatement(
@@ -380,8 +385,8 @@ public class StatementBuilder {
 
     private Statement buildGoTo(CobolParser.GoToStatementContext ctx) {
         List<String> targets = new ArrayList<>();
-        for (var id : ctx.IDENTIFIER()) {
-            targets.add(id.getText());
+        for (var name : ctx.procedureName()) {
+            targets.add(name.getText());
         }
         Expression dependingOn = null;
         if (ctx.identifier() != null) {
@@ -727,6 +732,93 @@ public class StatementBuilder {
             targets.add(exprBuilder.buildIdentifier(id));
         }
         return new InitializeStatement(targets, locationOf(ctx));
+    }
+
+    // ─── SORT / MERGE ───
+
+    private Statement buildSort(CobolParser.SortStatementContext ctx) {
+        String sortFile = ctx.IDENTIFIER(0).getText();
+        List<String> keys = new ArrayList<>();
+        for (var keyClause : ctx.sortKeyClause()) {
+            for (var id : keyClause.IDENTIFIER()) {
+                keys.add(id.getText());
+            }
+        }
+        List<String> inputFiles = new ArrayList<>();
+        String inputProc = null;
+        if (ctx.sortInputClause() instanceof CobolParser.SortUsingContext using) {
+            for (var id : using.IDENTIFIER()) {
+                inputFiles.add(id.getText());
+            }
+        } else if (ctx.sortInputClause() instanceof CobolParser.SortInputProcedureContext proc) {
+            inputProc = proc.procedureRef().procedureName(0).getText();
+        }
+        List<String> outputFiles = new ArrayList<>();
+        String outputProc = null;
+        if (ctx.sortOutputClause() instanceof CobolParser.SortGivingContext giving) {
+            for (var id : giving.IDENTIFIER()) {
+                outputFiles.add(id.getText());
+            }
+        } else if (ctx.sortOutputClause() instanceof CobolParser.SortOutputProcedureContext proc) {
+            outputProc = proc.procedureRef().procedureName(0).getText();
+        }
+        return new SortStatement(sortFile, false, keys, inputFiles, outputFiles, inputProc, outputProc, locationOf(ctx));
+    }
+
+    private Statement buildMerge(CobolParser.MergeStatementContext ctx) {
+        String mergeFile = ctx.IDENTIFIER(0).getText();
+        List<String> keys = new ArrayList<>();
+        for (var keyClause : ctx.sortKeyClause()) {
+            for (var id : keyClause.IDENTIFIER()) {
+                keys.add(id.getText());
+            }
+        }
+        // MERGE USING files
+        List<String> inputFiles = new ArrayList<>();
+        // ctx.IDENTIFIER() list: index 0 = mergeFile, 1..n = USING files
+        for (int i = 1; i < ctx.IDENTIFIER().size(); i++) {
+            inputFiles.add(ctx.IDENTIFIER(i).getText());
+        }
+        List<String> outputFiles = new ArrayList<>();
+        String outputProc = null;
+        if (ctx.sortOutputClause() instanceof CobolParser.SortGivingContext giving) {
+            for (var id : giving.IDENTIFIER()) {
+                outputFiles.add(id.getText());
+            }
+        } else if (ctx.sortOutputClause() instanceof CobolParser.SortOutputProcedureContext proc) {
+            outputProc = proc.procedureRef().procedureName(0).getText();
+        }
+        return new SortStatement(mergeFile, true, keys, inputFiles, outputFiles, null, outputProc, locationOf(ctx));
+    }
+
+    private Statement buildRelease(CobolParser.ReleaseStatementContext ctx) {
+        String recordName = ctx.IDENTIFIER().getText();
+        Expression from = ctx.expression() != null
+                ? exprBuilder.buildExpression(ctx.expression()) : null;
+        return new ReleaseStatement(recordName, false, from, null,
+                Collections.emptyList(), Collections.emptyList(), locationOf(ctx));
+    }
+
+    private Statement buildReturn(CobolParser.ReturnStatementContext ctx) {
+        String fileName = ctx.IDENTIFIER().getText();
+        Expression into = ctx.identifier() != null
+                ? exprBuilder.buildIdentifier(ctx.identifier()) : null;
+        List<Statement> atEnd = ctx.atEndClause() != null
+                ? buildStatements(ctx.atEndClause().statement()) : Collections.emptyList();
+        List<Statement> notAtEnd = ctx.notAtEndClause() != null
+                ? buildStatements(ctx.notAtEndClause().statement()) : Collections.emptyList();
+        return new ReleaseStatement(fileName, true, null, into, atEnd, notAtEnd, locationOf(ctx));
+    }
+
+    private Statement buildAlter(CobolParser.AlterStatementContext ctx) {
+        List<AlterStatement.Alteration> alterations = new ArrayList<>();
+        // Grammar: ALTER (IDENTIFIER TO (PROCEED TO)? IDENTIFIER)+
+        // Identifiers come in pairs: from, to
+        var ids = ctx.IDENTIFIER();
+        for (int i = 0; i + 1 < ids.size(); i += 2) {
+            alterations.add(new AlterStatement.Alteration(ids.get(i).getText(), ids.get(i + 1).getText()));
+        }
+        return new AlterStatement(alterations, locationOf(ctx));
     }
 
     // ─── Utility ───

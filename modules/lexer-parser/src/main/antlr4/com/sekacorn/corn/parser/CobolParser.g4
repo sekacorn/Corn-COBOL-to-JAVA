@@ -53,12 +53,18 @@ identificationParagraph
     ;
 
 idParagraphSentence
-    : idParagraphWord+ DOT
+    : idParagraphFirstWord idParagraphRestWord* DOT
     ;
 
-idParagraphWord
+// First word of a sentence cannot be a division keyword (would start a new paragraph or division)
+idParagraphFirstWord
     : ~(DOT | AUTHOR | DATE_WRITTEN | DATE_COMPILED | INSTALLATION
        | SECURITY | REMARKS | ENVIRONMENT | DATA | PROCEDURE)
+    ;
+
+// Subsequent words in a sentence can be anything except a period
+idParagraphRestWord
+    : ~DOT
     ;
 
 freeText
@@ -132,6 +138,7 @@ fileControlOption
     | RELATIVE KEY? IS? relKey=IDENTIFIER              # relativeKeyOption
     | FILE_STATUS IS? statusVar=IDENTIFIER             # fileStatusOption
     | STATUS IS? statusVar=IDENTIFIER                  # statusOption
+    | RESERVE INTEGERLITERAL (AREA | AREAS)?            # reserveOption
     | fileOrganization                                 # standaloneOrganization
     ;
 
@@ -172,7 +179,7 @@ fileDescriptionEntry
 fdClause
     : RECORD (CONTAINS? INTEGERLITERAL (TO INTEGERLITERAL)? CHARACTERS?)?
     | BLOCK (CONTAINS? INTEGERLITERAL (TO INTEGERLITERAL)? (RECORDS | CHARACTERS)?)?
-    | LABEL (RECORD | RECORDS) (IS | ARE)? (STANDARD | OMITTED)?
+    | LABEL (RECORD | RECORDS) (IS | ARE)? (STANDARD | OMITTED | IDENTIFIER)?
     | VALUE OF? IDENTIFIER IS? (IDENTIFIER | literal)
     | DATA (RECORD | RECORDS) (IS | ARE)? IDENTIFIER+
     ;
@@ -315,7 +322,13 @@ declarativeSection
 useStatement
     : USE (GLOBAL?)
       AFTER? STANDARD? (EXCEPTION | ERROR)
-      PROCEDURE ON? (IDENTIFIER+ | INPUT | OUTPUT | I_O | EXTEND)
+      PROCEDURE ON? (IDENTIFIER+ | INPUT | OUTPUT | I_O | EXTEND)         # useAfterError
+    | USE FOR? DEBUGGING ON?
+      (ALL REFERENCES? OF? qualifiedDataRef | IDENTIFIER+)                # useForDebugging
+    ;
+
+qualifiedDataRef
+    : IDENTIFIER (OF IDENTIFIER)*
     ;
 
 procedureUsingClause
@@ -341,6 +354,7 @@ section
 
 sectionName
     : IDENTIFIER
+    | INTEGERLITERAL
     ;
 
 paragraph
@@ -350,6 +364,7 @@ paragraph
 
 paragraphName
     : IDENTIFIER
+    | INTEGERLITERAL
     ;
 
 sentence
@@ -519,7 +534,7 @@ performStatement
     ;
 
 procedureRef
-    : IDENTIFIER ((THRU | THROUGH) IDENTIFIER)?
+    : procedureName ((THRU | THROUGH) procedureName)?
     ;
 
 performOption
@@ -539,7 +554,12 @@ afterVaryingClause
 // ─── GO TO ───
 
 goToStatement
-    : GO TO? IDENTIFIER+ (DEPENDING ON? identifier)?
+    : GO TO? procedureName+ (DEPENDING ON? identifier)?
+    ;
+
+procedureName
+    : IDENTIFIER
+    | INTEGERLITERAL
     ;
 
 // ─── STOP / EXIT / CONTINUE / GOBACK ───

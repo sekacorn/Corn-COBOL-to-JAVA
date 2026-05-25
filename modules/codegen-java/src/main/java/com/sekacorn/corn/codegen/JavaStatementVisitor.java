@@ -840,6 +840,37 @@ public final class JavaStatementVisitor implements StatementVisitor<Void> {
         return null;
     }
 
+    // ---- Sort / Merge / Release / Alter ----
+
+    @Override
+    public Void visitSort(SortStatement stmt) {
+        String op = stmt.isMerge() ? "MERGE" : "SORT";
+        buffer.line("// %s %s — sort/merge not executed at runtime", op, stmt.sortFile());
+        if (stmt.outputProcedure() != null) {
+            buffer.line("%s();", JavaNameMapper.toMethodName(stmt.outputProcedure()));
+        }
+        return null;
+    }
+
+    @Override
+    public Void visitAlter(AlterStatement stmt) {
+        buffer.line("// ALTER — dynamic GO TO alteration not supported in Java translation");
+        return null;
+    }
+
+    @Override
+    public Void visitRelease(ReleaseStatement stmt) {
+        if (stmt.isReturn()) {
+            buffer.line("// RETURN %s — sort file return not executed at runtime", stmt.recordName());
+            if (!stmt.atEnd().isEmpty()) {
+                generateStatements(stmt.atEnd());
+            }
+        } else {
+            buffer.line("// RELEASE %s — sort file release not executed at runtime", stmt.recordName());
+        }
+        return null;
+    }
+
     // ---- Helpers ----
 
     private String arithmeticContext(boolean rounded, RoundMode roundMode) {

@@ -39,4 +39,7 @@ public interface StatementVisitor<R> {
     R visitSearch(SearchStatement stmt);
     R visitSet(SetStatement stmt);
     R visitInitialize(InitializeStatement stmt);
+    R visitSort(SortStatement stmt);
+    R visitAlter(AlterStatement stmt);
+    R visitRelease(ReleaseStatement stmt);
 }

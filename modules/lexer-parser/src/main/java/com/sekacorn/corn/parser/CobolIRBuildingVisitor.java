@@ -92,9 +92,10 @@ public class CobolIRBuildingVisitor extends CobolParserBaseVisitor<Object> {
         StringBuilder sb = new StringBuilder();
         for (var sentence : sentences) {
             if (!sb.isEmpty()) sb.append(" ");
-            for (var word : sentence.idParagraphWord()) {
-                if (!sb.isEmpty()) sb.append(" ");
-                sb.append(word.getText());
+            var firstWord = sentence.idParagraphFirstWord();
+            if (firstWord != null) sb.append(firstWord.getText());
+            for (var word : sentence.idParagraphRestWord()) {
+                sb.append(" ").append(word.getText());
             }
         }
         return sb.toString().trim();

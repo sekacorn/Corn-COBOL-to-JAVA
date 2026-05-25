@@ -768,5 +768,8 @@ class IrStatementTest {
         @Override public String visitSearch(SearchStatement stmt) { return "search"; }
         @Override public String visitSet(SetStatement stmt) { return "set"; }
         @Override public String visitInitialize(InitializeStatement stmt) { return "initialize"; }
+        @Override public String visitSort(SortStatement stmt) { return "sort"; }
+        @Override public String visitAlter(AlterStatement stmt) { return "alter"; }
+        @Override public String visitRelease(ReleaseStatement stmt) { return "release"; }
     }
 }

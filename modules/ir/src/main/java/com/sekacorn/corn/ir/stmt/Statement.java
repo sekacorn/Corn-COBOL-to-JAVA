@@ -43,7 +43,10 @@ import com.sekacorn.corn.ir.SourceLocation;
     @JsonSubTypes.Type(value = UnstringStatement.class, name = "unstring"),
     @JsonSubTypes.Type(value = SearchStatement.class, name = "search"),
     @JsonSubTypes.Type(value = SetStatement.class, name = "set"),
-    @JsonSubTypes.Type(value = InitializeStatement.class, name = "initialize")
+    @JsonSubTypes.Type(value = InitializeStatement.class, name = "initialize"),
+    @JsonSubTypes.Type(value = SortStatement.class, name = "sort"),
+    @JsonSubTypes.Type(value = AlterStatement.class, name = "alter"),
+    @JsonSubTypes.Type(value = ReleaseStatement.class, name = "release")
 })
 public sealed interface Statement
     permits MoveStatement, ComputeStatement, AddStatement, SubtractStatement,
@@ -52,7 +55,8 @@ public sealed interface Statement
             DisplayStatement, AcceptStatement, OpenStatement, CloseStatement,
             ReadStatement, WriteStatement, RewriteStatement, DeleteStatement,
             StartStatement, CallStatement, InspectStatement, StringStatement,
-            UnstringStatement, SearchStatement, SetStatement, InitializeStatement {
+            UnstringStatement, SearchStatement, SetStatement, InitializeStatement,
+            SortStatement, AlterStatement, ReleaseStatement {
 
     /**
      * Get the source location of this statement

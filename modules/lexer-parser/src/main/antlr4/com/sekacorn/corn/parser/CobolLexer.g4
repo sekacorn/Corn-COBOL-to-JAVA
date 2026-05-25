@@ -202,6 +202,11 @@ END_RETURN      : 'END-RETURN' ;
 COLLATING       : 'COLLATING' ;
 ORDER           : 'ORDER' ;
 SEQUENCE        : 'SEQUENCE' ;
+RESERVE         : 'RESERVE' ;
+AREA            : 'AREA' ;
+AREAS           : 'AREAS' ;
+DEBUGGING       : 'DEBUGGING' ;
+REFERENCES      : 'REFERENCES' ;
 
 OPEN            : 'OPEN' ;
 INPUT           : 'INPUT' ;
