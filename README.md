@@ -4,7 +4,7 @@
 
 [![CI](https://github.com/sekacorn/corn-cobol-to-java/actions/workflows/ci.yml/badge.svg)](https://github.com/sekacorn/corn-cobol-to-java/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-Evaluation-blue.svg)](LICENSE)
-[![NIST Conformance](https://img.shields.io/badge/NIST%20CCVS85-52.5%25-brightgreen.svg)](#nist-ccvs85-conformance)
+[![NIST Conformance](https://img.shields.io/badge/NIST%20CCVS85-77.1%25-brightgreen.svg)](#nist-ccvs85-conformance)
 
 ---
 
@@ -69,10 +69,10 @@ Step-through execution trace with variable state tracking. Side-by-side COBOL/Ja
 
 ### Implemented Today
 
-- **Standards-oriented COBOL parser** targeting ANSI-85 with 52.5% NIST CCVS85 conformance
+- **Standards-oriented COBOL parser** targeting ANSI-85 with 77.1% NIST CCVS85 conformance (320/415 tests passing)
 - **Deterministic Java code generation** — same input always produces same output
 - **Full pipeline**: parse, IR, generate, compile, execute, validate
-- **40+ COBOL statement types** including arithmetic, control flow, file I/O, string operations, and INSPECT
+- **31 COBOL statement types** including arithmetic, control flow, file I/O, string operations, INSPECT, SORT/MERGE, and inter-program communication
 - **508-compliant demo UI** with real-time translation, analysis, portfolio planning, and cost estimation
 - **REST API server** for integration into existing workflows
 - **Execution-based validation** against expected output fixtures
@@ -81,12 +81,12 @@ Step-through execution trace with variable state tracking. Side-by-side COBOL/Ja
 
 | Category | Statements |
 |----------|-----------|
-| **Arithmetic** | `ADD`, `SUBTRACT`, `MULTIPLY`, `DIVIDE`, `COMPUTE` (with `ROUNDED`, `ON SIZE ERROR`, `GIVING`, Format 1 & 2) |
-| **Control Flow** | `IF`/`ELSE`, `EVALUATE`/`WHEN`, `PERFORM` (simple, `UNTIL`, `VARYING`, `TIMES`, `TEST BEFORE`/`AFTER`), `GO TO`, `STOP RUN`, `EXIT`, `GOBACK` |
-| **Data Movement** | `MOVE`, `INITIALIZE`, `SET` |
-| **I/O** | `DISPLAY`, `ACCEPT`, `OPEN`, `CLOSE`, `READ`, `WRITE`, `REWRITE`, `DELETE`, `START` |
-| **String** | `STRING`, `UNSTRING`, `INSPECT` (`TALLYING`, `REPLACING`, `CONVERTING`) |
-| **Program** | `CALL` (with `ON EXCEPTION`), `SEARCH`, `SORT`, `MERGE` |
+| **Arithmetic** | `ADD`, `SUBTRACT`, `MULTIPLY`, `DIVIDE`, `COMPUTE` (with `ROUNDED`, `ON SIZE ERROR`, `GIVING`, `CORRESPONDING`, Format 1 & 2) |
+| **Control Flow** | `IF`/`ELSE`, `EVALUATE`/`WHEN`, `PERFORM` (simple, `UNTIL`, `VARYING`, `TIMES`, `TEST BEFORE`/`AFTER`), `GO TO`, `STOP RUN`, `EXIT`, `GOBACK`, `NEXT SENTENCE`, `CONTINUE` |
+| **Data Movement** | `MOVE` (including `CORRESPONDING`), `INITIALIZE`, `SET` |
+| **I/O** | `DISPLAY`, `ACCEPT`, `OPEN`, `CLOSE` (with `LOCK`/`NO REWIND`), `READ`, `WRITE` (with `ADVANCING`, `AT END-OF-PAGE`), `REWRITE`, `DELETE`, `START` (with `NOT INVALID KEY`) |
+| **String** | `STRING` (multi-source), `UNSTRING`, `INSPECT` (`TALLYING`, `REPLACING`, `CONVERTING`, combined) |
+| **Program** | `CALL` (with `ON EXCEPTION`/`ON OVERFLOW`), `CANCEL`, `SEARCH`, `SORT`, `MERGE`, `RELEASE`, `RETURN`, `ALTER` |
 
 ---
 
@@ -213,21 +213,21 @@ The parser is validated against the US government **NIST CCVS85** COBOL-85 compi
 
 | Category | Pass | Total | Rate |
 |----------|------|-------|------|
-| RL (Relative I/O) | 18 | 26 | **69.2%** |
-| SQ (Sequential I/O) | 55 | 84 | **65.5%** |
-| IC (Inter-program Communication) | 30 | 47 | **63.8%** |
-| IF (Intrinsic Functions) | 28 | 45 | **62.2%** |
-| NC (Nucleus) | 58 | 95 | **61.1%** |
-| IX (Indexed I/O) | 13 | 29 | 44.8% |
-| OB (Obsolete) | 3 | 7 | 42.9% |
-| ST (Sort/Merge) | 7 | 25 | 28.0% |
+| IC (Inter-program Communication) | 47 | 47 | **100%** |
+| SQ (Sequential I/O) | 78 | 84 | **92.9%** |
+| RL (Relative I/O) | 23 | 26 | **88.5%** |
+| IX (Indexed I/O) | 25 | 29 | **86.2%** |
+| NC (Nucleus) | 75 | 95 | **78.9%** |
+| DB (Debug) | 11 | 15 | **73.3%** |
+| ST (Sort/Merge) | 18 | 25 | **72.0%** |
+| IF (Intrinsic Functions) | 28 | 45 | 62.2% |
+| SG (Segmentation) | 8 | 13 | 61.5% |
+| OB (Obsolete) | 4 | 7 | 57.1% |
 | SM (Source Management) | 3 | 13 | 23.1% |
-| SG (Segmentation) | 3 | 13 | 23.1% |
-| DB (Debug) | 0 | 15 | 0.0% |
 | RW (Report Writer) | 0 | 6 | 0.0% |
 | CM (Communication) | 0 | 9 | 0.0% |
 | EX (EXEC) | 0 | 1 | 0.0% |
-| **Total** | **218** | **415** | **52.5%** |
+| **Total** | **320** | **415** | **77.1%** |
 
 > These results measure successful parse + Java code generation. Conformance rate is actively improving with each release.
 
@@ -250,7 +250,8 @@ The parser is validated against the US government **NIST CCVS85** COBOL-85 compi
 |-------|-------|--------|
 | **Core Pipeline** | Parse, IR, codegen, runtime, CLI | Shipped |
 | **Demo Platform** | Web UI, REST API, portfolio/cost tools | Shipped |
-| **NIST 75%+** | Grammar expansion, COPY/REPLACE preprocessing | In Progress |
+| **NIST 75%+** | Grammar expansion, nested programs, EXTERNAL/GLOBAL | Achieved (77.1%) |
+| **NIST 85%+** | Intrinsic functions, COPY/REPLACE preprocessing, abbreviated conditions | In Progress |
 | **Semantic Analysis** | Type checking, data flow, dead code detection | Private Repo |
 | **Enterprise Features** | EXEC CICS, EXEC SQL, COMP-3 dialects, multi-program | Private Repo |
 | **Production Platform** | Rust-based high-performance engine, cloud deployment | Private Repo |

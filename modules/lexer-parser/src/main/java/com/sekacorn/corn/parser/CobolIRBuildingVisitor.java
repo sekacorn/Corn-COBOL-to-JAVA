@@ -176,11 +176,11 @@ public class CobolIRBuildingVisitor extends CobolParserBaseVisitor<Object> {
                     default -> FileControlEntry.AccessMode.SEQUENTIAL;
                 };
             } else if (option instanceof CobolParser.RecordKeyOptionContext keyOpt) {
-                recordKey = keyOpt.keyName.getText();
+                recordKey = keyOpt.qualifiedDataRef().IDENTIFIER(0).getText();
             } else if (option instanceof CobolParser.AlternateKeyOptionContext altOpt) {
-                altKey = altOpt.altKey.getText();
+                altKey = altOpt.qualifiedDataRef().IDENTIFIER(0).getText();
             } else if (option instanceof CobolParser.RelativeKeyOptionContext relOpt) {
-                relativeKey = relOpt.relKey.getText();
+                relativeKey = relOpt.qualifiedDataRef().IDENTIFIER(0).getText();
             } else if (option instanceof CobolParser.FileStatusOptionContext statOpt) {
                 fileStatus = statOpt.statusVar.getText();
             } else if (option instanceof CobolParser.StatusOptionContext statOpt) {

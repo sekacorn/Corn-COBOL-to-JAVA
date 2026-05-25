@@ -871,6 +871,14 @@ public final class JavaStatementVisitor implements StatementVisitor<Void> {
         return null;
     }
 
+    @Override
+    public Void visitCancel(CancelStatement stmt) {
+        for (String name : stmt.programNames()) {
+            buffer.line("// CANCEL %s — subprogram cancellation not supported in Java translation", name);
+        }
+        return null;
+    }
+
     // ---- Helpers ----
 
     private String arithmeticContext(boolean rounded, RoundMode roundMode) {

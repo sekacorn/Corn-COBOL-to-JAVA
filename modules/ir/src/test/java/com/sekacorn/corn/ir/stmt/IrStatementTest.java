@@ -771,5 +771,6 @@ class IrStatementTest {
         @Override public String visitSort(SortStatement stmt) { return "sort"; }
         @Override public String visitAlter(AlterStatement stmt) { return "alter"; }
         @Override public String visitRelease(ReleaseStatement stmt) { return "release"; }
+        @Override public String visitCancel(CancelStatement stmt) { return "cancel"; }
     }
 }

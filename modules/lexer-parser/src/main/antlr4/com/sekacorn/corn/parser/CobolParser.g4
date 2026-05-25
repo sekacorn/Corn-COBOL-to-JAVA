@@ -14,7 +14,7 @@ options { tokenVocab = CobolLexer; }
 // ════════════════════════════════════════════════════════
 
 compilationUnit
-    : program EOF
+    : program+ EOF
     ;
 
 program
@@ -22,6 +22,21 @@ program
       environmentDivision?
       dataDivision?
       procedureDivision?
+      nestedProgram*
+      endProgramHeader?
+    ;
+
+nestedProgram
+    : identificationDivision
+      environmentDivision?
+      dataDivision?
+      procedureDivision?
+      nestedProgram*
+      endProgramHeader?
+    ;
+
+endProgramHeader
+    : END_KW PROGRAM programName DOT
     ;
 
 // ════════════════════════════════════════════════════════
@@ -35,7 +50,7 @@ identificationDivision
     ;
 
 programIdParagraph
-    : PROGRAM_ID DOT? programName DOT
+    : PROGRAM_ID DOT? programName (IS? (INITIAL_KW | COMMON))? DOT
     ;
 
 programName
@@ -132,13 +147,15 @@ fileControlOption
     : ASSIGN TO? (IDENTIFIER | STRINGLITERAL)          # assignOption
     | ORGANIZATION IS? fileOrganization               # organizationOption
     | ACCESS MODE? IS? accessMode                      # accessModeOption
-    | RECORD KEY? IS? keyName=IDENTIFIER               # recordKeyOption
-    | ALTERNATE RECORD? KEY? IS? altKey=IDENTIFIER
+    | RECORD KEY? IS? qualifiedDataRef                  # recordKeyOption
+    | ALTERNATE RECORD? KEY? IS? qualifiedDataRef
       (WITH? DUPLICATES)?                              # alternateKeyOption
-    | RELATIVE KEY? IS? relKey=IDENTIFIER              # relativeKeyOption
-    | FILE_STATUS IS? statusVar=IDENTIFIER             # fileStatusOption
-    | STATUS IS? statusVar=IDENTIFIER                  # statusOption
+    | RELATIVE KEY? IS? qualifiedDataRef               # relativeKeyOption
+    | FILE_STATUS IS? statusVar=IDENTIFIER (OF IDENTIFIER)*   # fileStatusOption
+    | STATUS IS? statusVar=IDENTIFIER (OF IDENTIFIER)*        # statusOption
     | RESERVE INTEGERLITERAL (AREA | AREAS)?            # reserveOption
+    | RECORD DELIMITER IS? IDENTIFIER                   # recordDelimiterOption
+    | PADDING CHARACTER? IS? IDENTIFIER                 # paddingOption
     | fileOrganization                                 # standaloneOrganization
     ;
 
@@ -177,11 +194,21 @@ fileDescriptionEntry
     ;
 
 fdClause
-    : RECORD (CONTAINS? INTEGERLITERAL (TO INTEGERLITERAL)? CHARACTERS?)?
+    : RECORD IS? VARYING IN? SIZE?
+      (FROM INTEGERLITERAL TO INTEGERLITERAL CHARACTERS?)?
+      (DEPENDING ON? identifier)?
+    | RECORD (CONTAINS? INTEGERLITERAL (TO INTEGERLITERAL)? CHARACTERS?)?
     | BLOCK (CONTAINS? INTEGERLITERAL (TO INTEGERLITERAL)? (RECORDS | CHARACTERS)?)?
     | LABEL (RECORD | RECORDS) (IS | ARE)? (STANDARD | OMITTED | IDENTIFIER)?
     | VALUE OF? IDENTIFIER IS? (IDENTIFIER | literal)
     | DATA (RECORD | RECORDS) (IS | ARE)? IDENTIFIER+
+    | LINAGE IS? (INTEGERLITERAL | IDENTIFIER) LINES?
+      (WITH? FOOTING AT? (INTEGERLITERAL | IDENTIFIER))?
+      (LINES? AT? TOP (INTEGERLITERAL | IDENTIFIER))?
+      (LINES? AT? BOTTOM (INTEGERLITERAL | IDENTIFIER))?
+    | CODE_SET IS? IDENTIFIER
+    | IS? EXTERNAL
+    | IS? GLOBAL
     ;
 
 workingStorageSection
@@ -227,6 +254,16 @@ dataItemClause
     | justifiedClause
     | blankWhenZeroClause
     | synchronizedClause
+    | externalClause
+    | globalClause
+    ;
+
+externalClause
+    : IS? EXTERNAL
+    ;
+
+globalClause
+    : IS? GLOBAL
     ;
 
 picClause
@@ -411,6 +448,8 @@ statement
     | mergeStatement
     | releaseStatement
     | returnStatement
+    | nextSentenceStatement
+    | cancelStatement
     ;
 
 // ─── MOVE ───
@@ -422,14 +461,18 @@ moveStatement
 // ─── Arithmetic ───
 
 addStatement
-    : ADD expression+ TO identifier+
+    : ADD (CORRESPONDING | CORR) identifier TO identifier
+      roundedClause? onSizeErrorClause? notSizeErrorClause? END_ADD?
+    | ADD expression+ TO identifier+
       givingClause? roundedClause? onSizeErrorClause? notSizeErrorClause? END_ADD?
     | ADD expression+ givingClause
       roundedClause? onSizeErrorClause? notSizeErrorClause? END_ADD?
     ;
 
 subtractStatement
-    : SUBTRACT expression+ FROM identifier+
+    : SUBTRACT (CORRESPONDING | CORR) identifier FROM identifier
+      roundedClause? onSizeErrorClause? notSizeErrorClause? END_SUBTRACT?
+    | SUBTRACT expression+ FROM identifier+
       givingClause? roundedClause? onSizeErrorClause? notSizeErrorClause? END_SUBTRACT?
     | SUBTRACT expression+ FROM expression givingClause
       roundedClause? onSizeErrorClause? notSizeErrorClause? END_SUBTRACT?
@@ -458,8 +501,12 @@ divideTarget
     ;
 
 computeStatement
-    : COMPUTE identifier+ EQUAL expression
-      roundedClause? onSizeErrorClause? notSizeErrorClause? END_COMPUTE?
+    : COMPUTE computeResultTarget+ EQUAL expression
+      onSizeErrorClause? notSizeErrorClause? END_COMPUTE?
+    ;
+
+computeResultTarget
+    : identifier ROUNDED?
     ;
 
 givingClause
@@ -577,6 +624,10 @@ continueStatement
     : CONTINUE
     ;
 
+nextSentenceStatement
+    : NEXT SENTENCE
+    ;
+
 gobackStatement
     : GOBACK
     ;
@@ -592,7 +643,16 @@ openFileClause
     ;
 
 closeStatement
-    : CLOSE IDENTIFIER+
+    : CLOSE closeFileClause+
+    ;
+
+closeFileClause
+    : IDENTIFIER closeOption?
+    ;
+
+closeOption
+    : WITH? LOCK
+    | WITH? NO REWIND
     ;
 
 readStatement
@@ -624,8 +684,19 @@ notInvalidKeyClause
 writeStatement
     : WRITE IDENTIFIER (FROM expression)?
       writeAdvancingClause?
+      atEndOfPageClause?
+      notAtEndOfPageClause?
       invalidKeyClause?
+      notInvalidKeyClause?
       END_WRITE?
+    ;
+
+atEndOfPageClause
+    : AT? (END_OF_PAGE | EOP) statement+
+    ;
+
+notAtEndOfPageClause
+    : NOT AT? (END_OF_PAGE | EOP) statement+
     ;
 
 writeAdvancingClause
@@ -635,18 +706,22 @@ writeAdvancingClause
 rewriteStatement
     : REWRITE IDENTIFIER (FROM expression)?
       invalidKeyClause?
+      notInvalidKeyClause?
       END_REWRITE?
     ;
 
 deleteStatement
     : DELETE_KW IDENTIFIER RECORD?
       invalidKeyClause?
+      notInvalidKeyClause?
       END_DELETE?
     ;
 
 startStatement
-    : START_KW IDENTIFIER (KEY IS? (EQUAL | EQUAL_WORD | GREATER | GREATER_WORD | LESS | LESS_WORD | GREATER_EQUAL | LESS_EQUAL)? identifier)?
+    : START_KW IDENTIFIER
+      (KEY IS? NOT? (EQUAL TO? | EQUAL_WORD TO? | GREATER THAN? | GREATER_WORD THAN? | LESS THAN? | LESS_WORD THAN? | GREATER_EQUAL | LESS_EQUAL)? identifier)?
       invalidKeyClause?
+      notInvalidKeyClause?
       END_START?
     ;
 
@@ -667,6 +742,7 @@ callStatement
       (USING callUsingArg+)?
       (RETURNING identifier)?
       onExceptionClause?
+      notOnExceptionClause?
       END_CALL?
     ;
 
@@ -675,8 +751,11 @@ callUsingArg
     ;
 
 onExceptionClause
-    : ON? EXCEPTION statement+
-      (NOT ON? EXCEPTION statement+)?
+    : ON? (EXCEPTION | OVERFLOW) statement+
+    ;
+
+notOnExceptionClause
+    : NOT ON? (EXCEPTION | OVERFLOW) statement+
     ;
 
 // ─── INSPECT ───
@@ -686,7 +765,8 @@ inspectStatement
     ;
 
 inspectOp
-    : TALLYING identifier FOR inspectTallyingClause+     # inspectTallying
+    : TALLYING identifier FOR inspectTallyingClause+
+      (REPLACING inspectReplacingClause+)?                # inspectTallying
     | REPLACING inspectReplacingClause+                   # inspectReplacing
     | CONVERTING expression TO expression
       (BEFORE INITIAL_KW? expression)?
@@ -723,7 +803,7 @@ stringStatement
     ;
 
 stringSendingClause
-    : expression DELIMITED BY? (SIZE | expression)
+    : expression+ DELIMITED BY? (SIZE | expression)
     ;
 
 // ─── UNSTRING ───
@@ -774,6 +854,12 @@ initializeStatement
 
 alterStatement
     : ALTER (IDENTIFIER TO (PROCEED TO)? IDENTIFIER)+
+    ;
+
+// ─── CANCEL ───
+
+cancelStatement
+    : CANCEL (IDENTIFIER | STRINGLITERAL)+
     ;
 
 // ─── SORT / MERGE ───
@@ -846,7 +932,7 @@ conditionNameCondition
     ;
 
 classCondition
-    : identifier IS NOT?
+    : identifier IS? NOT?
       (NUMERIC | ALPHABETIC | ALPHABETIC_LOWER | ALPHABETIC_UPPER
       | POSITIVE | NEGATIVE | ZERO | ZEROS | ZEROES)
     ;

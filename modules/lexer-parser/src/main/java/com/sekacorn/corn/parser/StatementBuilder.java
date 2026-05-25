@@ -72,6 +72,12 @@ public class StatementBuilder {
         if (ctx.releaseStatement() != null) return buildRelease(ctx.releaseStatement());
         if (ctx.returnStatement() != null) return buildReturn(ctx.returnStatement());
         if (ctx.alterStatement() != null) return buildAlter(ctx.alterStatement());
+        if (ctx.nextSentenceStatement() != null) {
+            return new PerformStatement(
+                    PerformStatement.PerformType.INLINE, null, null,
+                    null, null, null, null, Collections.emptyList(), locationOf(ctx));
+        }
+        if (ctx.cancelStatement() != null) return buildCancel(ctx.cancelStatement());
         throw new IllegalStateException("Unknown statement: " + ctx.getText());
     }
 
@@ -102,6 +108,15 @@ public class StatementBuilder {
     // ─── Arithmetic ───
 
     private Statement buildAdd(CobolParser.AddStatementContext ctx) {
+        boolean corr = ctx.CORRESPONDING() != null || ctx.CORR() != null;
+        if (corr) {
+            Expression source = exprBuilder.buildIdentifier(ctx.identifier(0));
+            Expression target = exprBuilder.buildIdentifier(ctx.identifier(1));
+            boolean rounded = ctx.roundedClause() != null;
+            List<Statement> onSizeError = buildSizeError(ctx.onSizeErrorClause());
+            return new AddStatement(List.of(source), List.of(target), List.of(),
+                    rounded, null, onSizeError, locationOf(ctx));
+        }
         List<Expression> operands = new ArrayList<>();
         for (var expr : ctx.expression()) {
             operands.add(exprBuilder.buildExpression(expr));
@@ -117,6 +132,15 @@ public class StatementBuilder {
     }
 
     private Statement buildSubtract(CobolParser.SubtractStatementContext ctx) {
+        boolean corr = ctx.CORRESPONDING() != null || ctx.CORR() != null;
+        if (corr) {
+            Expression source = exprBuilder.buildIdentifier(ctx.identifier(0));
+            Expression target = exprBuilder.buildIdentifier(ctx.identifier(1));
+            boolean rounded = ctx.roundedClause() != null;
+            List<Statement> onSizeError = buildSizeError(ctx.onSizeErrorClause());
+            return new SubtractStatement(List.of(source), List.of(target), List.of(),
+                    rounded, null, onSizeError, locationOf(ctx));
+        }
         List<Expression> operands = new ArrayList<>();
         for (var expr : ctx.expression()) {
             operands.add(exprBuilder.buildExpression(expr));
@@ -209,11 +233,12 @@ public class StatementBuilder {
 
     private Statement buildCompute(CobolParser.ComputeStatementContext ctx) {
         List<Expression> targets = new ArrayList<>();
-        for (var id : ctx.identifier()) {
-            targets.add(exprBuilder.buildIdentifier(id));
+        boolean rounded = false;
+        for (var t : ctx.computeResultTarget()) {
+            targets.add(exprBuilder.buildIdentifier(t.identifier()));
+            if (t.ROUNDED() != null) rounded = true;
         }
         Expression expression = exprBuilder.buildExpression(ctx.expression());
-        boolean rounded = ctx.roundedClause() != null;
         List<Statement> onSizeError = buildSizeError(ctx.onSizeErrorClause());
         return new ComputeStatement(targets, expression, rounded, null, onSizeError, locationOf(ctx));
     }
@@ -436,8 +461,8 @@ public class StatementBuilder {
 
     private Statement buildClose(CobolParser.CloseStatementContext ctx) {
         List<String> fileNames = new ArrayList<>();
-        for (var id : ctx.IDENTIFIER()) {
-            fileNames.add(id.getText());
+        for (var clause : ctx.closeFileClause()) {
+            fileNames.add(clause.IDENTIFIER().getText());
         }
         return new CloseStatement(fileNames, locationOf(ctx));
     }
@@ -535,6 +560,9 @@ public class StatementBuilder {
         List<Statement> onException = Collections.emptyList();
         if (ctx.onExceptionClause() != null) {
             onException = buildStatements(ctx.onExceptionClause().statement());
+        }
+        if (ctx.notOnExceptionClause() != null && onException.isEmpty()) {
+            onException = buildStatements(ctx.notOnExceptionClause().statement());
         }
         return new CallStatement(programName, arguments, returning, onException, locationOf(ctx));
     }
@@ -819,6 +847,20 @@ public class StatementBuilder {
             alterations.add(new AlterStatement.Alteration(ids.get(i).getText(), ids.get(i + 1).getText()));
         }
         return new AlterStatement(alterations, locationOf(ctx));
+    }
+
+    // ─── CANCEL ───
+
+    private Statement buildCancel(CobolParser.CancelStatementContext ctx) {
+        List<String> programNames = new ArrayList<>();
+        for (var id : ctx.IDENTIFIER()) {
+            programNames.add(id.getText());
+        }
+        for (var lit : ctx.STRINGLITERAL()) {
+            String text = lit.getText();
+            programNames.add(text.substring(1, text.length() - 1));
+        }
+        return new CancelStatement(programNames, locationOf(ctx));
     }
 
     // ─── Utility ───

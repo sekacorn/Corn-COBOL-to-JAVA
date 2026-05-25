@@ -59,8 +59,10 @@ public class CobolPreprocessor {
             // Skip conditional compilation lines (NIST CCVS85 X-card markers)
             // These are implementation-specific lines that should be treated
             // as comments when not activated by the test harness.
+            // Keep 'A' indicator lines — they contain SPECIAL-NAMES definitions.
             if (Character.isLetter(indicator) && indicator != ' '
-                    && indicator != '-') {
+                    && indicator != '-'
+                    && Character.toUpperCase(indicator) != 'A') {
                 continue;
             }
 
@@ -96,6 +98,9 @@ public class CobolPreprocessor {
                         }
                         // In both cases, skip the opening quote on continuation
                         trimmed = trimmed.substring(1);
+                    } else if (continuationBuffer.length() > 0
+                            && continuationBuffer.charAt(continuationBuffer.length() - 1) != ' ') {
+                        continuationBuffer.append(' ');
                     }
                     continuationBuffer.append(trimmed);
                 }

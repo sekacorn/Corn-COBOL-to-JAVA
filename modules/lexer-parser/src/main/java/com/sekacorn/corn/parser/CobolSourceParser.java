@@ -98,7 +98,7 @@ public final class CobolSourceParser {
         CobolIRBuildingVisitor visitor = new CobolIRBuildingVisitor(fileName, dialect);
         Program program = null;
         try {
-            program = visitor.visitProgram(tree.program());
+            program = visitor.visitProgram(tree.program(0));
         } catch (Exception e) {
             String msg = e.getMessage() != null
                     ? e.getMessage()

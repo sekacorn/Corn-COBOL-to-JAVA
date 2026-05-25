@@ -194,6 +194,8 @@ DECLARATIVES    : 'DECLARATIVES' ;
 END_DECLARATIVES: 'END' WS+ 'DECLARATIVES' ;
 USE             : 'USE' ;
 GLOBAL          : 'GLOBAL' ;
+EXTERNAL        : 'EXTERNAL' ;
+COMMON          : 'COMMON' ;
 SORT            : 'SORT' ;
 MERGE           : 'MERGE' ;
 RELEASE         : 'RELEASE' ;
@@ -270,8 +272,20 @@ INITIALIZE      : 'INITIALIZE' ;
 
 GOBACK          : 'GOBACK' ;
 ALTER           : 'ALTER' ;
+CANCEL          : 'CANCEL' ;
 PROCEED         : 'PROCEED' ;
 NEXT            : 'NEXT' ;
+SENTENCE        : 'SENTENCE' ;
+PADDING         : 'PADDING' ;
+LINAGE          : 'LINAGE' ;
+FOOTING         : 'FOOTING' ;
+TOP             : 'TOP' ;
+BOTTOM          : 'BOTTOM' ;
+LOCK            : 'LOCK' ;
+REWIND          : 'REWIND' ;
+CODE_SET        : 'CODE-SET' ;
+END_OF_PAGE     : 'END-OF-PAGE' ;
+EOP             : 'EOP' ;
 
 // ─── FD clause keywords ───
 

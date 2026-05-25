@@ -42,4 +42,5 @@ public interface StatementVisitor<R> {
     R visitSort(SortStatement stmt);
     R visitAlter(AlterStatement stmt);
     R visitRelease(ReleaseStatement stmt);
+    R visitCancel(CancelStatement stmt);
 }
