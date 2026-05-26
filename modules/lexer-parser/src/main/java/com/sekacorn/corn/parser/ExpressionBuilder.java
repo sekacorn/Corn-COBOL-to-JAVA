@@ -178,8 +178,13 @@ public class ExpressionBuilder {
         // Subscript reference
         if (ctx.subscriptPart() != null) {
             List<Expression> subscripts = new ArrayList<>();
-            for (var expr : ctx.subscriptPart().expression()) {
-                subscripts.add(buildExpression(expr));
+            for (var sub : ctx.subscriptPart().subscriptExpression()) {
+                if (sub.ALL() != null) {
+                    // ALL subscript — treat as a special literal marker
+                    subscripts.add(new Literal("__ALL__", Literal.LiteralType.STRING, locationOf(ctx)));
+                } else {
+                    subscripts.add(buildExpression(sub.expression()));
+                }
             }
             return new SubscriptRef(name, subscripts, locationOf(ctx));
         }
@@ -200,7 +205,7 @@ public class ExpressionBuilder {
      * Build a function call expression.
      */
     private Expression buildFunctionCall(CobolParser.FunctionCallContext ctx) {
-        String funcName = ctx.IDENTIFIER().getText();
+        String funcName = ctx.functionName().getText();
         List<Expression> args = new ArrayList<>();
         for (var expr : ctx.expression()) {
             args.add(buildExpression(expr));

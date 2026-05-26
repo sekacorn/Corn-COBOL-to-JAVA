@@ -178,35 +178,90 @@ public final class JavaExpressionVisitor implements ExpressionVisitor<String> {
 
     private String mapIntrinsicFunction(String name, List<String> args) {
         String argList = String.join(", ", args);
+        buffer.addImport("java.math.BigDecimal");
         return switch (name.toUpperCase()) {
+            // ─── String functions ───
             case "LENGTH" -> args.isEmpty() ? "0" : "String.valueOf(" + args.get(0) + ").length()";
-            case "UPPER-CASE" -> args.isEmpty() ? "\"\"" : args.get(0) + ".toUpperCase()";
-            case "LOWER-CASE" -> args.isEmpty() ? "\"\"" : args.get(0) + ".toLowerCase()";
-            case "TRIM" -> args.isEmpty() ? "\"\"" : args.get(0) + ".trim()";
-            case "REVERSE" -> args.isEmpty() ? "\"\"" : "new StringBuilder(" + args.get(0) + ").reverse().toString()";
+            case "UPPER-CASE" -> args.isEmpty() ? "\"\"" : "String.valueOf(" + args.get(0) + ").toUpperCase()";
+            case "LOWER-CASE" -> args.isEmpty() ? "\"\"" : "String.valueOf(" + args.get(0) + ").toLowerCase()";
+            case "TRIM" -> args.isEmpty() ? "\"\"" : "String.valueOf(" + args.get(0) + ").trim()";
+            case "REVERSE" -> args.isEmpty() ? "\"\"" : "new StringBuilder(String.valueOf(" + args.get(0) + ")).reverse().toString()";
+            case "CHAR" -> args.size() >= 1 ? "String.valueOf((char)(" + args.get(0) + ").intValue())" : "\" \"";
+            case "ORD" -> args.size() >= 1 ? "new BigDecimal((int) String.valueOf(" + args.get(0) + ").charAt(0))" : "BigDecimal.ZERO";
+            case "NUMVAL" -> args.size() >= 1 ? "new BigDecimal(String.valueOf(" + args.get(0) + ").trim())" : "BigDecimal.ZERO";
+            case "NUMVAL-C" -> args.size() >= 1 ? "new BigDecimal(String.valueOf(" + args.get(0) + ").trim().replace(\",\", \"\").replace(\"$\", \"\").replace(\"CR\", \"\").replace(\"DB\", \"\"))" : "BigDecimal.ZERO";
+
+            // ─── Date/time functions ───
             case "CURRENT-DATE" -> {
                 buffer.addImport("java.time.LocalDateTime");
                 buffer.addImport("java.time.format.DateTimeFormatter");
-                yield "LocalDateTime.now().format(DateTimeFormatter.ofPattern(\"yyyyMMddHHmmss\"))";
+                yield "LocalDateTime.now().format(DateTimeFormatter.ofPattern(\"yyyyMMddHHmmssSSSSS\")) + \"    \"";
             }
-            case "ABS", "ABSOLUTE-VALUE" -> {
-                if (args.isEmpty()) {
-                    buffer.addImport("java.math.BigDecimal");
-                    yield "BigDecimal.ZERO";
-                }
-                yield args.get(0) + ".abs()";
+            case "WHEN-COMPILED" -> {
+                buffer.addImport("java.time.LocalDateTime");
+                buffer.addImport("java.time.format.DateTimeFormatter");
+                yield "LocalDateTime.now().format(DateTimeFormatter.ofPattern(\"yyyyMMddHHmmssSSSSS\")) + \"    \"";
             }
+            case "INTEGER-OF-DATE" -> args.size() >= 1 ? "CobolMath.integerOfDate(" + args.get(0) + ")" : "BigDecimal.ZERO";
+            case "INTEGER-OF-DAY" -> args.size() >= 1 ? "CobolMath.integerOfDay(" + args.get(0) + ")" : "BigDecimal.ZERO";
+            case "DATE-OF-INTEGER" -> args.size() >= 1 ? "CobolMath.dateOfInteger(" + args.get(0) + ")" : "BigDecimal.ZERO";
+            case "DAY-OF-INTEGER" -> args.size() >= 1 ? "CobolMath.dayOfInteger(" + args.get(0) + ")" : "BigDecimal.ZERO";
+
+            // ─── Arithmetic functions ───
+            case "ABS", "ABSOLUTE-VALUE" -> args.isEmpty() ? "BigDecimal.ZERO" : args.get(0) + ".abs()";
             case "MAX" -> reduceMaxMin(args, true);
             case "MIN" -> reduceMaxMin(args, false);
-            case "MOD" -> {
-                // FUNCTION MOD(a, b) -- args is "a, b"
-                if (args.size() >= 2) {
-                    yield args.get(0) + ".remainder(" + args.get(1) + ")";
-                }
-                buffer.addImport("java.math.BigDecimal");
-                yield "BigDecimal.ZERO";
+            case "ORD-MAX" -> reduceOrdMaxMin(args, true);
+            case "ORD-MIN" -> reduceOrdMaxMin(args, false);
+            case "MOD" -> args.size() >= 2 ? "CobolMath.mod(" + args.get(0) + ", " + args.get(1) + ")" : "BigDecimal.ZERO";
+            case "REM" -> args.size() >= 2 ? args.get(0) + ".remainder(" + args.get(1) + ")" : "BigDecimal.ZERO";
+            case "SUM" -> args.isEmpty() ? "BigDecimal.ZERO" : reduceSum(args);
+            case "MEAN" -> args.isEmpty() ? "BigDecimal.ZERO" : reduceMean(args);
+            case "MEDIAN" -> {
+                buffer.addImport("com.sekacorn.corn.runtime.CobolMath");
+                yield "CobolMath.median(" + argList + ")";
             }
-            default -> "/* FUNCTION " + name + " */ " + argList;
+            case "MIDRANGE" -> {
+                yield "(" + reduceMaxMin(args, true) + ".add(" + reduceMaxMin(args, false) + ")).divide(new BigDecimal(\"2\"), 10, java.math.RoundingMode.DOWN)";
+            }
+            case "RANGE" -> {
+                yield reduceMaxMin(args, true) + ".subtract(" + reduceMaxMin(args, false) + ")";
+            }
+            case "VARIANCE" -> {
+                buffer.addImport("com.sekacorn.corn.runtime.CobolMath");
+                yield "CobolMath.variance(" + argList + ")";
+            }
+            case "STANDARD-DEVIATION" -> {
+                buffer.addImport("com.sekacorn.corn.runtime.CobolMath");
+                yield "CobolMath.standardDeviation(" + argList + ")";
+            }
+            case "INTEGER" -> args.size() >= 1 ? args.get(0) + ".setScale(0, java.math.RoundingMode.FLOOR)" : "BigDecimal.ZERO";
+            case "INTEGER-PART" -> args.size() >= 1 ? args.get(0) + ".setScale(0, java.math.RoundingMode.DOWN)" : "BigDecimal.ZERO";
+            case "FACTORIAL" -> args.size() >= 1 ? "CobolMath.factorial(" + args.get(0) + ")" : "BigDecimal.ONE";
+            case "ANNUITY" -> args.size() >= 2 ? "CobolMath.annuity(" + args.get(0) + ", " + args.get(1) + ")" : "BigDecimal.ZERO";
+            case "PRESENT-VALUE" -> {
+                buffer.addImport("com.sekacorn.corn.runtime.CobolMath");
+                yield "CobolMath.presentValue(" + argList + ")";
+            }
+            case "RANDOM" -> args.isEmpty()
+                    ? "new BigDecimal(Math.random())"
+                    : "new BigDecimal(new java.util.Random(" + args.get(0) + ".longValue()).nextDouble())";
+
+            // ─── Trigonometric / math functions ───
+            case "SQRT" -> args.size() >= 1 ? "new BigDecimal(Math.sqrt(" + args.get(0) + ".doubleValue()))" : "BigDecimal.ZERO";
+            case "LOG" -> args.size() >= 1 ? "new BigDecimal(Math.log(" + args.get(0) + ".doubleValue()))" : "BigDecimal.ZERO";
+            case "LOG10" -> args.size() >= 1 ? "new BigDecimal(Math.log10(" + args.get(0) + ".doubleValue()))" : "BigDecimal.ZERO";
+            case "SIN" -> args.size() >= 1 ? "new BigDecimal(Math.sin(" + args.get(0) + ".doubleValue()))" : "BigDecimal.ZERO";
+            case "COS" -> args.size() >= 1 ? "new BigDecimal(Math.cos(" + args.get(0) + ".doubleValue()))" : "BigDecimal.ZERO";
+            case "TAN" -> args.size() >= 1 ? "new BigDecimal(Math.tan(" + args.get(0) + ".doubleValue()))" : "BigDecimal.ZERO";
+            case "ASIN" -> args.size() >= 1 ? "new BigDecimal(Math.asin(" + args.get(0) + ".doubleValue()))" : "BigDecimal.ZERO";
+            case "ACOS" -> args.size() >= 1 ? "new BigDecimal(Math.acos(" + args.get(0) + ".doubleValue()))" : "BigDecimal.ZERO";
+            case "ATAN" -> args.size() >= 1 ? "new BigDecimal(Math.atan(" + args.get(0) + ".doubleValue()))" : "BigDecimal.ZERO";
+
+            default -> {
+                // Unknown function: emit zero so generated code compiles
+                yield "BigDecimal.ZERO /* TODO: FUNCTION " + name + "(" + argList + ") */";
+            }
         };
     }
 
@@ -223,6 +278,35 @@ public final class JavaExpressionVisitor implements ExpressionVisitor<String> {
                     : "(" + current + ".compareTo(" + next + ") <= 0 ? " + current + " : " + next + ")";
         }
         return current;
+    }
+
+    private String reduceOrdMaxMin(List<String> args, boolean max) {
+        if (args.isEmpty()) {
+            buffer.addImport("java.math.BigDecimal");
+            return "BigDecimal.ZERO";
+        }
+        // ORD-MAX/ORD-MIN returns the ordinal position (1-based) of the max/min argument
+        String expr = "new BigDecimal(1)";
+        for (int i = 1; i < args.size(); i++) {
+            String comparison = max
+                    ? args.get(i) + ".compareTo(" + args.get(i - 1) + ") > 0"
+                    : args.get(i) + ".compareTo(" + args.get(i - 1) + ") < 0";
+            expr = "(" + comparison + " ? new BigDecimal(" + (i + 1) + ") : " + expr + ")";
+        }
+        return expr;
+    }
+
+    private String reduceSum(List<String> args) {
+        String current = args.get(0);
+        for (int i = 1; i < args.size(); i++) {
+            current = current + ".add(" + args.get(i) + ")";
+        }
+        return current;
+    }
+
+    private String reduceMean(List<String> args) {
+        String sum = reduceSum(args);
+        return "(" + sum + ").divide(new BigDecimal(\"" + args.size() + "\"), 10, java.math.RoundingMode.DOWN)";
     }
 
     // Helper to check if a COBOL name refers to a numeric field

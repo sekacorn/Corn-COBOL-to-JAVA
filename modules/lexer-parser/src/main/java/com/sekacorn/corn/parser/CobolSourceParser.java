@@ -44,7 +44,7 @@ public final class CobolSourceParser {
     public static ParseResult parse(Path source, SourceMetadata.CobolDialect dialect) throws IOException {
         String rawSource = Files.readString(source, StandardCharsets.UTF_8);
         String fileName = source.getFileName().toString();
-        return parseString(rawSource, fileName, dialect);
+        return parseString(rawSource, fileName, dialect, source);
     }
 
     /**
@@ -57,12 +57,21 @@ public final class CobolSourceParser {
      */
     public static ParseResult parseString(String source, String fileName,
                                             SourceMetadata.CobolDialect dialect) {
+        return parseString(source, fileName, dialect, null);
+    }
+
+    /**
+     * Parse COBOL source from a string with optional source file for copybook resolution.
+     */
+    public static ParseResult parseString(String source, String fileName,
+                                            SourceMetadata.CobolDialect dialect,
+                                            Path sourceFile) {
         List<ParseError> errors = new ArrayList<>();
 
         String preprocessed;
         if (looksLikeFixedFormat(source)) {
             CobolPreprocessor preprocessor = new CobolPreprocessor();
-            preprocessed = preprocessor.process(source);
+            preprocessed = preprocessor.process(source, sourceFile);
         } else {
             preprocessed = source;
         }

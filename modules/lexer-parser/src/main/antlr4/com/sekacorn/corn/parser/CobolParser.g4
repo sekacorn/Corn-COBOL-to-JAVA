@@ -985,7 +985,12 @@ qualifiedTail
     ;
 
 subscriptPart
-    : LPAREN expression (expression)* RPAREN
+    : LPAREN subscriptExpression (subscriptExpression)* RPAREN
+    ;
+
+subscriptExpression
+    : ALL       // ALL subscript — reference all table occurrences
+    | expression
     ;
 
 referenceModification
@@ -1014,6 +1019,14 @@ figurativeConstant
 // ─── Function calls ───
 
 functionCall
-    : FUNCTION IDENTIFIER LPAREN expression (expression)* RPAREN
+    : FUNCTION functionName (LPAREN expression (expression)* RPAREN)?
+    ;
+
+functionName
+    : IDENTIFIER
+    | RANDOM         // ACCESS MODE keyword, also intrinsic function
+    | DATE           // ACCEPT FROM keyword, also intrinsic function
+    | DAY            // ACCEPT FROM keyword, also intrinsic function
+    | TIME           // ACCEPT FROM keyword, also intrinsic function
     ;
 

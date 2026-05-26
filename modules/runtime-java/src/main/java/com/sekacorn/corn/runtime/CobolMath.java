@@ -331,4 +331,132 @@ public final class CobolMath {
     public static boolean isZero(BigDecimal value) {
         return value == null || value.compareTo(BigDecimal.ZERO) == 0;
     }
+
+    // ─── Intrinsic Function Support ───
+
+    /**
+     * FUNCTION MOD(a, b) — COBOL modulus: a - (b * FUNCTION INTEGER(a / b))
+     */
+    public static BigDecimal mod(BigDecimal a, BigDecimal b) {
+        if (b.compareTo(BigDecimal.ZERO) == 0) return BigDecimal.ZERO;
+        BigDecimal quotient = a.divide(b, 20, RoundingMode.DOWN);
+        BigDecimal intQuotient = quotient.setScale(0, RoundingMode.FLOOR);
+        return a.subtract(b.multiply(intQuotient));
+    }
+
+    /**
+     * FUNCTION MEDIAN(args...) — middle value of sorted arguments
+     */
+    public static BigDecimal median(BigDecimal... values) {
+        if (values == null || values.length == 0) return BigDecimal.ZERO;
+        java.util.Arrays.sort(values);
+        int n = values.length;
+        if (n % 2 == 1) {
+            return values[n / 2];
+        }
+        return values[n / 2 - 1].add(values[n / 2])
+                .divide(new BigDecimal("2"), 10, RoundingMode.DOWN);
+    }
+
+    /**
+     * FUNCTION VARIANCE(args...) — population variance
+     */
+    public static BigDecimal variance(BigDecimal... values) {
+        if (values == null || values.length == 0) return BigDecimal.ZERO;
+        BigDecimal sum = BigDecimal.ZERO;
+        for (BigDecimal v : values) sum = sum.add(v);
+        BigDecimal mean = sum.divide(new BigDecimal(values.length), 20, RoundingMode.DOWN);
+        BigDecimal sumSqDiff = BigDecimal.ZERO;
+        for (BigDecimal v : values) {
+            BigDecimal diff = v.subtract(mean);
+            sumSqDiff = sumSqDiff.add(diff.multiply(diff));
+        }
+        return sumSqDiff.divide(new BigDecimal(values.length), 10, RoundingMode.DOWN);
+    }
+
+    /**
+     * FUNCTION STANDARD-DEVIATION(args...) — sqrt of population variance
+     */
+    public static BigDecimal standardDeviation(BigDecimal... values) {
+        BigDecimal var = variance(values);
+        return new BigDecimal(Math.sqrt(var.doubleValue()));
+    }
+
+    /**
+     * FUNCTION FACTORIAL(n)
+     */
+    public static BigDecimal factorial(BigDecimal n) {
+        int val = n.intValue();
+        if (val < 0) return BigDecimal.ZERO;
+        BigDecimal result = BigDecimal.ONE;
+        for (int i = 2; i <= val; i++) {
+            result = result.multiply(new BigDecimal(i));
+        }
+        return result;
+    }
+
+    /**
+     * FUNCTION ANNUITY(rate, periods) — annuity factor
+     * If rate = 0, returns 1/periods. Otherwise rate / (1 - (1+rate)^(-periods))
+     */
+    public static BigDecimal annuity(BigDecimal rate, BigDecimal periods) {
+        int n = periods.intValue();
+        if (n <= 0) return BigDecimal.ZERO;
+        if (rate.compareTo(BigDecimal.ZERO) == 0) {
+            return BigDecimal.ONE.divide(new BigDecimal(n), 10, RoundingMode.DOWN);
+        }
+        double r = rate.doubleValue();
+        double factor = r / (1.0 - Math.pow(1.0 + r, -n));
+        return new BigDecimal(factor);
+    }
+
+    /**
+     * FUNCTION PRESENT-VALUE(rate, amounts...) — present value of future amounts
+     */
+    public static BigDecimal presentValue(BigDecimal rate, BigDecimal... amounts) {
+        if (amounts == null || amounts.length == 0) return BigDecimal.ZERO;
+        double r = rate.doubleValue();
+        double pv = 0.0;
+        for (int i = 0; i < amounts.length; i++) {
+            pv += amounts[i].doubleValue() / Math.pow(1.0 + r, i + 1);
+        }
+        return new BigDecimal(pv);
+    }
+
+    /**
+     * FUNCTION INTEGER-OF-DATE(yyyymmdd) — Lilian day number
+     */
+    public static BigDecimal integerOfDate(BigDecimal dateVal) {
+        int d = dateVal.intValue();
+        int year = d / 10000;
+        int month = (d % 10000) / 100;
+        int day = d % 100;
+        return new BigDecimal(java.time.LocalDate.of(year, month, day).toEpochDay() + 141428);
+    }
+
+    /**
+     * FUNCTION INTEGER-OF-DAY(yyyyddd) — Lilian day number from day-of-year format
+     */
+    public static BigDecimal integerOfDay(BigDecimal dayVal) {
+        int d = dayVal.intValue();
+        int year = d / 1000;
+        int dayOfYear = d % 1000;
+        return new BigDecimal(java.time.LocalDate.ofYearDay(year, dayOfYear).toEpochDay() + 141428);
+    }
+
+    /**
+     * FUNCTION DATE-OF-INTEGER(lilian) — yyyymmdd from Lilian day number
+     */
+    public static BigDecimal dateOfInteger(BigDecimal lilian) {
+        java.time.LocalDate date = java.time.LocalDate.ofEpochDay(lilian.longValue() - 141428);
+        return new BigDecimal(date.getYear() * 10000 + date.getMonthValue() * 100 + date.getDayOfMonth());
+    }
+
+    /**
+     * FUNCTION DAY-OF-INTEGER(lilian) — yyyyddd from Lilian day number
+     */
+    public static BigDecimal dayOfInteger(BigDecimal lilian) {
+        java.time.LocalDate date = java.time.LocalDate.ofEpochDay(lilian.longValue() - 141428);
+        return new BigDecimal(date.getYear() * 1000 + date.getDayOfYear());
+    }
 }
