@@ -44,10 +44,12 @@ jobs:
             modules/*/target/failsafe-reports/
           retention-days: 14
 
-      - name: Upload CLI JAR
+      - name: Upload runnable JARs
         if: github.ref == 'refs/heads/main' && success()
         uses: actions/upload-artifact@v4
         with:
-          name: corn-cli
-          path: modules/cli/target/corn-cobol-to-java.jar
+          name: corn-runnable-jars
+          path: |
+            modules/cli/target/corn-cobol-to-java.jar
+            modules/server/target/corn-demo-server.jar
           retention-days: 30

@@ -82,7 +82,7 @@ public class RefactorCommand implements Callable<Integer> {
 
         if (llmProvider == LLMProvider.NONE) {
             System.out.println("\nNo LLM provider specified. Available providers:");
-            System.out.println("  --llm-provider anthropic    (Claude)");
+            System.out.println("  --llm-provider anthropic");
             System.out.println("  --llm-provider openai       (GPT)");
             System.out.println("  --llm-provider azure        (Azure OpenAI)");
             System.out.println("  --llm-provider local        (Local endpoint)");

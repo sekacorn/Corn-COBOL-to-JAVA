@@ -30,7 +30,7 @@ import picocli.CommandLine.HelpCommand;
         },
         description = "COBOL-to-Java translation toolchain (evaluation edition)",
         version = "Corn COBOL-to-Java Compiler 1.0.0-SNAPSHOT\n" +
-                 "Copyright (c) 2025-2026 Cornmeister LLC (Maryland LLC)\n" +
+                 "Copyright (c) 2025-2026 Cornmeister LLC\n" +
                  "License: Corn Evaluation License (non-production)",
         mixinStandardHelpOptions = true,
         subcommands = {

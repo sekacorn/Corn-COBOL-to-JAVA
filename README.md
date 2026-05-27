@@ -242,25 +242,38 @@ public class Arithmetic {
 ### Run the Demo UI
 
 ```bash
-corn-demo-server
+./build.sh
+./run.sh
 # Open http://localhost:8085
 ```
+
+On Windows, use `build.bat` and `run.bat`.
 
 ### Run the CLI
 
 ```bash
-corn-cobol-to-java --help
+./run.sh cli --help
 
 # Translate COBOL to Java
-corn-cobol-to-java translate ./cobol \
+./run.sh cli translate ./cobol \
   --output ./output/java --codegen-level 2
 
 # Validate the full pipeline
-corn-cobol-to-java validate ./cobol \
+./run.sh cli validate ./cobol \
   --output ./corn-validation
 
 # Analyze COBOL source
-corn-cobol-to-java analyze ./cobol
+./run.sh cli analyze ./cobol
+```
+
+### Run with Docker
+
+```bash
+docker compose up --build
+# Open http://localhost:8085
+
+# CLI example
+docker compose run --rm corn-cli cli --help
 ```
 
 ---
@@ -288,23 +301,6 @@ Current public evaluation coverage:
 
 | Category | Pass | Total | Rate |
 |----------|------|-------|------|
-<<<<<<< HEAD
-| IC — Inter-program Communication | 47 | 47 | **100%** |
-| IF — Intrinsic Functions | 45 | 45 | **100%** |
-| SM — Source Management | 13 | 13 | **100%** |
-| RL — Relative I/O | 26 | 26 | **100%** |
-| IX — Indexed I/O | 29 | 29 | **100%** |
-| SQ — Sequential I/O | 78 | 84 | **92.9%** |
-| ST — Sort / Merge | 23 | 25 | **92.0%** |
-| SG — Segmentation | 12 | 13 | **92.3%** |
-| NC — Nucleus | 84 | 95 | **88.4%** |
-| DB — Debug | 13 | 15 | **86.7%** |
-| OB — Obsolete | 4 | 7 | 57.1% |
-| RW — Report Writer | 0 | 6 | 0.0% |
-| CM — Communication | 0 | 9 | 0.0% |
-| EX — EXEC | 0 | 1 | 0.0% |
-| **Total** | **374** | **415** | **90.1%** |
-=======
 | IC (Inter-program Communication) | 47 | 47 | **100%** |
 | IF (Intrinsic Functions) | 45 | 45 | **100%** |
 | SM (Source Management) | 13 | 13 | **100%** |
@@ -320,7 +316,6 @@ Current public evaluation coverage:
 | CM (Communication) | 0 | 9 | 0.0% |
 | EX (EXEC) | 0 | 1 | 0.0% |
 | **Total** | **388** | **415** | **93.5%** |
->>>>>>> d3bc5ce (Raise NIST CCVS85 conformance to 93.5% (388/415) — ST, SG at 100%)
 
 > These results measure successful parse + Java code generation. Runtime semantic equivalence is validated separately where expected-output fixtures are available.
 
@@ -364,26 +359,15 @@ Known limitations:
 
 | Phase | Focus | Status |
 |-------|-------|--------|
-<<<<<<< HEAD
-| **Core Pipeline** | Parse, IR, code generation, runtime, CLI | Shipped |
-| **Demo Platform** | Web UI, REST API, portfolio tools, cost tools | Shipped |
-| **NIST 75%+** | Grammar expansion, nested programs, EXTERNAL / GLOBAL | Achieved |
-| **NIST 85%+** | Intrinsic functions, COPY / REPLACE preprocessing | Achieved |
-| **NIST 90%+** | Abbreviated conditions, compound relational operators, qualified references | Achieved |
-| **Semantic Analysis** | Type checking, data flow, dead code detection | Private platform |
-| **Enterprise Features** | EXEC CICS, EXEC SQL, COMP-3 dialects, multi-program analysis | Private platform |
-| **Production Platform** | Rust-based high-performance engine and cloud deployment | Private platform |
-=======
 | **Core Pipeline** | Parse, IR, codegen, runtime, CLI | Shipped |
 | **Demo Platform** | Web UI, REST API, portfolio/cost tools | Shipped |
 | **NIST 75%+** | Grammar expansion, nested programs, EXTERNAL/GLOBAL | Achieved (77.1%) |
 | **NIST 85%+** | Intrinsic functions, COPY/REPLACE preprocessing | Achieved (85.5%) |
 | **NIST 90%+** | Abbreviated conditions, compound relational operators, qualified refs | Achieved (90.1%) |
 | **NIST 93%+** | EVALUATE enhancements, INSPECT multi-target, per-target ROUNDED, OPEN/CLOSE options | Achieved (93.5%) |
-| **Semantic Analysis** | Type checking, data flow, dead code detection | Private Repo |
-| **Enterprise Features** | EXEC CICS, EXEC SQL, COMP-3 dialects, multi-program | Private Repo |
-| **Production Platform** | Rust-based high-performance engine, cloud deployment | Private Repo |
->>>>>>> d3bc5ce (Raise NIST CCVS85 conformance to 93.5% (388/415) — ST, SG at 100%)
+| **Semantic Analysis** | Type checking, data flow, dead code detection | Private platform |
+| **Enterprise Features** | EXEC CICS, EXEC SQL, COMP-3 dialects, multi-program | Private platform |
+| **Production Platform** | Rust-based high-performance engine, cloud deployment | Private platform |
 
 ---
 
@@ -413,7 +397,6 @@ Corn is designed for organizations evaluating large-scale COBOL modernization, m
 For production licensing, enterprise agreements, pilots, partnerships, or acquisition inquiries:
 
 **Cornmeister LLC**  
-Maryland, USA  
 `sekacorn@gmail.com`
 
 ---
@@ -435,4 +418,4 @@ That is what Corn is being built to deliver.
 
 ---
 
-*Built by Cornmeister LLC. Maryland, USA.*
+*Built by Cornmeister LLC.*

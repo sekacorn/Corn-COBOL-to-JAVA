@@ -34,5 +34,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: modules/cli/target/corn-cobol-to-java.jar
+          files: |
+            modules/cli/target/corn-cobol-to-java.jar
+            modules/server/target/corn-demo-server.jar
           generate_release_notes: true

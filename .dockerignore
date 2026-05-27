@@ -1,10 +1,12 @@
 # Build artifacts
 target/
 */target/
+**/target/
 *.jar
 *.war
 *.ear
 *.class
+dependency-reduced-pom.xml
 
 # IDE files
 .idea/
@@ -30,9 +32,12 @@ docker-compose*.yml
 docs/
 *.md
 LICENSE
+Screenshot*.png
+screenshot*.png
 
 # Test files
 */src/test/
+**/src/test/
 
 # Scripts (already have entrypoint)
 *.sh
@@ -56,3 +61,10 @@ logs/
 *.bak
 *.swp
 *~
+
+# Local outputs and caches
+output/
+config/
+corn-output/
+corn-validation/
+.m2/

@@ -76,4 +76,4 @@ Email: sekacorn@gmail.com
 
 ---
 
-Copyright (c) 2025–2026 Cornmeister LLC (Maryland LLC). All rights reserved.
+Copyright (c) 2025–2026 Cornmeister LLC. All rights reserved.
