@@ -1,62 +1,67 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # ============================================================================
 # Corn COBOL-to-Java Compiler - Unix Package Script
-# Author: Sekacorn
-# Created: 2025-01-10
-# License: Corn Evaluation License — See LICENSE
-# Copyright (c) 2025-2026 Cornmeister LLC. All rights reserved.
 # ============================================================================
 
-set -e
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
 
 MVN_CMD="${MVN_CMD:-mvn}"
-MVN_CMD_WIN="${MVN_CMD_WIN:-}"
+
 MVN_ARGS=()
-if [ -n "${MAVEN_REPO_LOCAL:-}" ]; then
+if [[ -n "${MAVEN_REPO_LOCAL:-}" ]]; then
     MVN_ARGS+=("-Dmaven.repo.local=$MAVEN_REPO_LOCAL")
 fi
-
-run_maven() {
-    if [ -n "$MVN_CMD_WIN" ]; then
-        local command_line="& '$MVN_CMD_WIN'"
-        local arg
-        for arg in "$@"; do
-            command_line="$command_line '$arg'"
-        done
-        powershell.exe -NoProfile -Command "$command_line"
-    else
-        "$MVN_CMD" "$@"
-    fi
-}
 
 echo "==============================================="
 echo " Corn COBOL-to-Java Compiler - Package Script"
 echo "==============================================="
-echo ""
+echo
 
-# Check if Maven is installed
-if [ -z "$MVN_CMD_WIN" ] && ! command -v "$MVN_CMD" >/dev/null 2>&1 && [ ! -x "$MVN_CMD" ] && [ ! -f "$MVN_CMD" ]; then
-    echo "ERROR: Maven is not installed or not in PATH"
+if ! command -v "$MVN_CMD" >/dev/null 2>&1 && [[ ! -x "$MVN_CMD" && ! -f "$MVN_CMD" ]]; then
+    echo "ERROR: Maven is required and mvn was not found in PATH."
     exit 1
 fi
 
-echo "Building executable JAR..."
-echo ""
+if command -v lsof >/dev/null 2>&1; then
+    pid="$(lsof -ti tcp:8085 -sTCP:LISTEN 2>/dev/null || true)"
+    if [[ -n "$pid" ]]; then
+        echo "Stopping existing Corn demo server on port 8085..."
+        kill "$pid" 2>/dev/null || true
+        sleep 1
+    fi
+elif command -v powershell.exe >/dev/null 2>&1; then
+    powershell.exe -NoProfile -ExecutionPolicy Bypass -Command "\$c = Get-NetTCPConnection -LocalPort 8085 -ErrorAction SilentlyContinue | Select-Object -First 1; if (\$c) { \$p = Get-Process -Id \$c.OwningProcess -ErrorAction SilentlyContinue; if (\$p -and \$p.ProcessName -eq 'java') { Write-Host 'Stopping existing Corn demo server on port 8085...'; Stop-Process -Id \$p.Id -Force; Start-Sleep -Seconds 1 } }" || true
+fi
 
-# Clean, compile, and package
-run_maven clean package -DskipTests "${MVN_ARGS[@]}"
+echo "Building executable CLI and demo server JARs..."
+echo
+"$MVN_CMD" package -DskipTests "${MVN_ARGS[@]}"
 
-echo ""
+if [[ ! -f "modules/cli/target/corn-cobol-to-java.jar" ]]; then
+    echo "ERROR: modules/cli/target/corn-cobol-to-java.jar was not created."
+    exit 1
+fi
+
+if [[ ! -f "modules/server/target/corn-demo-server.jar" ]]; then
+    echo "ERROR: modules/server/target/corn-demo-server.jar was not created."
+    exit 1
+fi
+
+echo
 echo "==============================================="
 echo " PACKAGE SUCCESSFUL"
 echo "==============================================="
-echo ""
-echo "Executable JAR created at:"
+echo
+echo "Executable JARs created at:"
 echo "  modules/cli/target/corn-cobol-to-java.jar"
-echo ""
-echo "To run the application:"
-echo "  ./run.sh --help"
-echo ""
-echo "To run with tests:"
-echo "  \"$MVN_CMD\" package"
-echo ""
+echo "  modules/server/target/corn-demo-server.jar"
+echo
+echo "Run the GUI:"
+echo "  ./run.sh"
+echo
+echo "Run the CLI:"
+echo "  ./run.sh cli --help"
+echo
