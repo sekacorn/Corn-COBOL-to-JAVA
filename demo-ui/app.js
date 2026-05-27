@@ -66,35 +66,17 @@ tabs.forEach(tab => {
 
 // --- Sample COBOL Program ---
 const SAMPLE_COBOL = `       IDENTIFICATION DIVISION.
-       PROGRAM-ID. BANK-INTEREST.
+       PROGRAM-ID. ARITHMETIC.
        DATA DIVISION.
        WORKING-STORAGE SECTION.
-       01  WS-PRINCIPAL   PIC 9(7)V99 VALUE 10000.00.
-       01  WS-RATE        PIC 9V9(4)  VALUE 0.0525.
-       01  WS-YEARS       PIC 99      VALUE 5.
-       01  WS-AMOUNT      PIC 9(7)V99 VALUE 0.
-       01  WS-INTEREST    PIC 9(7)V99 VALUE 0.
-       01  WS-COUNTER     PIC 99      VALUE 0.
-       01  WS-DISPLAY     PIC Z(6)9.99.
+       01  WS-A       PIC 9(5) VALUE 100.
+       01  WS-B       PIC 9(5) VALUE 50.
+       01  WS-RESULT  PIC 9(5) VALUE 0.
        PROCEDURE DIVISION.
-       MAIN-PARA.
-           DISPLAY "=== COMPOUND INTEREST CALCULATOR ==="
-           MOVE WS-PRINCIPAL TO WS-AMOUNT
-           PERFORM CALC-INTEREST
-               VARYING WS-COUNTER FROM 1 BY 1
-               UNTIL WS-COUNTER > WS-YEARS
-           MOVE WS-AMOUNT TO WS-DISPLAY
-           DISPLAY "FINAL AMOUNT: $" WS-DISPLAY
-           COMPUTE WS-INTEREST =
-               WS-AMOUNT - WS-PRINCIPAL
-           MOVE WS-INTEREST TO WS-DISPLAY
-           DISPLAY "TOTAL INTEREST: $" WS-DISPLAY
+           ADD WS-A TO WS-B GIVING WS-RESULT.
+           DISPLAY "RESULT: " WS-RESULT.
            STOP RUN.
-       CALC-INTEREST.
-           COMPUTE WS-AMOUNT =
-               WS-AMOUNT * (1 + WS-RATE)
-           MOVE WS-AMOUNT TO WS-DISPLAY
-           DISPLAY "YEAR " WS-COUNTER ": $" WS-DISPLAY.`;
+`;
 
 // --- Mock Fallback Data ---
 const MOCK_JAVA = `import com.sekacorn.corn.runtime.*;
@@ -182,9 +164,68 @@ const fileUpload = document.getElementById('file-upload');
 // Track last translation result for download filename
 let lastClassName = 'Output';
 
-btnLoadSample.addEventListener('click', () => {
+async function validateCobolSource(cobol) {
+  if (!cobol.trim()) {
+    return { valid: false, message: 'No COBOL source provided' };
+  }
+
+  if (backendAvailable === false) {
+    const hasRequiredDivisions =
+      /IDENTIFICATION\s+DIVISION\./i.test(cobol) &&
+      /PROGRAM-ID\./i.test(cobol) &&
+      /PROCEDURE\s+DIVISION\./i.test(cobol);
+    return {
+      valid: hasRequiredDivisions,
+      message: hasRequiredDivisions ? 'offline structure check passed' : 'missing required COBOL divisions',
+    };
+  }
+
+  try {
+    const resp = await fetch(`${API_BASE}/api/analyze`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ source: cobol }),
+      signal: AbortSignal.timeout(10000),
+    });
+    const data = await resp.json();
+    backendAvailable = true;
+
+    if (data.success && data.programId && !data.hasErrors) {
+      return { valid: true, message: `program ${data.programId}` };
+    }
+
+    const diagnostic = (data.diagnostics || []).find(d => d.severity === 'error') || (data.diagnostics || [])[0];
+    return {
+      valid: false,
+      message: data.error || diagnostic?.message || 'parser could not produce a program IR',
+    };
+  } catch {
+    backendAvailable = false;
+    return { valid: false, message: 'backend validation unavailable' };
+  }
+}
+
+async function showCobolValidationStatus(cobol) {
+  translateStatus.textContent = 'Validating COBOL...';
+  translateStatus.className = 'status-bar';
+  const result = await validateCobolSource(cobol);
+  if (result.valid) {
+    translateStatus.textContent = 'validated';
+    translateStatus.className = 'status-bar success';
+  } else {
+    translateStatus.textContent = `not valid COBOL — ${result.message}`;
+    translateStatus.className = 'status-bar error';
+  }
+  return result;
+}
+
+btnLoadSample.addEventListener('click', async () => {
   cobolInput.value = SAMPLE_COBOL;
   cobolInput.focus();
+  javaOutput.innerHTML = '<span class="placeholder-text">Java output will appear here after translation.</span>';
+  btnCopyJava.disabled = true;
+  btnDownloadJava.disabled = true;
+  await showCobolValidationStatus(SAMPLE_COBOL);
 });
 
 fileUpload.addEventListener('change', (e) => {
@@ -194,13 +235,14 @@ fileUpload.addEventListener('change', (e) => {
   reader.onload = (ev) => {
     cobolInput.value = ev.target.result;
     cobolInput.focus();
+    showCobolValidationStatus(cobolInput.value);
   };
   reader.readAsText(file);
 });
 
 btnTranslate.addEventListener('click', async () => {
-  const cobol = cobolInput.value.trim();
-  if (!cobol) {
+  const cobol = cobolInput.value;
+  if (!cobol.trim()) {
     translateStatus.textContent = 'Please enter COBOL source code.';
     translateStatus.className = 'status-bar error';
     return;
@@ -208,6 +250,13 @@ btnTranslate.addEventListener('click', async () => {
 
   btnTranslate.disabled = true;
   javaOutput.innerHTML = '<span class="loading"><span class="loading-dot"></span><span class="loading-dot"></span><span class="loading-dot"></span></span> Translating...';
+  const validation = await showCobolValidationStatus(cobol);
+  if (!validation.valid) {
+    javaOutput.innerHTML = '<span class="placeholder-text">Fix the COBOL source, then translate again.</span>';
+    btnTranslate.disabled = false;
+    return;
+  }
+
   translateStatus.textContent = 'Connecting to CORN engine...';
   translateStatus.className = 'status-bar';
 

@@ -794,8 +794,7 @@ public class CobolPreprocessor {
 
     private String extractCodeArea(String raw) {
         if (raw.length() <= 7) return "";
-        int end = Math.min(raw.length(), 72);
-        return raw.substring(7, end);
+        return raw.substring(7);
     }
 
     public int getOriginalLine(int preprocessedLine) {
