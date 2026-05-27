@@ -220,6 +220,7 @@ CLOSE           : 'CLOSE' ;
 READ            : 'READ' ;
 WRITE           : 'WRITE' ;
 REWRITE         : 'REWRITE' ;
+REVERSED        : 'REVERSED' ;
 DELETE_KW       : 'DELETE' ;
 START_KW        : 'START' ;
 AT              : 'AT' ;

@@ -84,7 +84,7 @@ public class CobolPreprocessor {
 
     // Matches COPY followed by whitespace and an identifier (copybook name)
     private static final Pattern COPY_DIRECTIVE = Pattern.compile(
-            "(?i)\\bCOPY\\s+[A-Za-z][A-Za-z0-9-]*");
+            "(?i)(?<![A-Za-z0-9-])COPY\\s+[A-Za-z][A-Za-z0-9-]*");
 
     private List<String> processCopyDirectives(String[] lines, int depth) {
         if (depth > MAX_COPY_DEPTH) {
@@ -428,7 +428,7 @@ public class CobolPreprocessor {
     private static final Pattern ID_COMMENT_PARA = Pattern.compile(
             "(?i)^\\s*(AUTHOR|DATE-WRITTEN|DATE-COMPILED|INSTALLATION|SECURITY|REMARKS)\\s*\\.");
     private static final Pattern ID_COMMENT_END = Pattern.compile(
-            "(?i)^\\s*(PROGRAM-ID\\s*\\.|((ENVIRONMENT|DATA|PROCEDURE|IDENTIFICATION|ID)\\s+DIVISION))");
+            "(?i)^\\s{0,3}(PROGRAM-ID\\s*\\.|((ENVIRONMENT|DATA|PROCEDURE|IDENTIFICATION|ID)\\s+DIVISION))");
 
     private List<String> processFixedFormat(List<String> rawLines) {
         List<String> outputLines = new ArrayList<>();

@@ -6,6 +6,7 @@
 package com.sekacorn.corn.parser;
 
 import com.sekacorn.corn.ir.SourceLocation;
+import com.sekacorn.corn.ir.expr.BinaryOp;
 import com.sekacorn.corn.ir.expr.Expression;
 import com.sekacorn.corn.ir.expr.Literal;
 import com.sekacorn.corn.ir.stmt.*;
@@ -117,16 +118,31 @@ public class StatementBuilder {
             return new AddStatement(List.of(source), List.of(target), List.of(),
                     rounded, null, onSizeError, locationOf(ctx));
         }
-        List<Expression> operands = new ArrayList<>();
+        List<Expression> allExprs = new ArrayList<>();
         for (var expr : ctx.expression()) {
-            operands.add(exprBuilder.buildExpression(expr));
+            allExprs.add(exprBuilder.buildExpression(expr));
         }
+        List<Expression> operands;
         List<Expression> to = new ArrayList<>();
-        for (var id : ctx.identifier()) {
-            to.add(exprBuilder.buildIdentifier(id));
-        }
         List<Expression> giving = buildGiving(ctx.givingClause());
-        boolean rounded = ctx.roundedClause() != null;
+        if (ctx.addTarget() != null && !ctx.addTarget().isEmpty()) {
+            // Format 1: ADD expr+ TO addTarget+
+            operands = allExprs;
+            for (var t : ctx.addTarget()) {
+                to.add(exprBuilder.buildIdentifier(t.identifier()));
+            }
+        } else if (ctx.TO() != null && ctx.givingClause() != null) {
+            // Format 3 with TO: ADD expr+ TO expr GIVING target+
+            // Last expression is the TO operand, rest are addends
+            operands = new ArrayList<>(allExprs.subList(0, allExprs.size() - 1));
+            to.add(allExprs.get(allExprs.size() - 1));
+        } else {
+            // Format 3 without TO: ADD expr+ GIVING target+
+            operands = allExprs;
+        }
+        boolean rounded = ctx.roundedClause() != null
+                || (ctx.addTarget() != null && ctx.addTarget().stream()
+                    .anyMatch(t -> t.roundedClause() != null));
         List<Statement> onSizeError = buildSizeError(ctx.onSizeErrorClause());
         return new AddStatement(operands, to, giving, rounded, null, onSizeError, locationOf(ctx));
     }
@@ -146,11 +162,15 @@ public class StatementBuilder {
             operands.add(exprBuilder.buildExpression(expr));
         }
         List<Expression> from = new ArrayList<>();
-        for (var id : ctx.identifier()) {
-            from.add(exprBuilder.buildIdentifier(id));
+        if (ctx.subtractTarget() != null && !ctx.subtractTarget().isEmpty()) {
+            for (var t : ctx.subtractTarget()) {
+                from.add(exprBuilder.buildIdentifier(t.identifier()));
+            }
         }
         List<Expression> giving = buildGiving(ctx.givingClause());
-        boolean rounded = ctx.roundedClause() != null;
+        boolean rounded = ctx.roundedClause() != null
+                || (ctx.subtractTarget() != null && ctx.subtractTarget().stream()
+                    .anyMatch(t -> t.roundedClause() != null));
         List<Statement> onSizeError = buildSizeError(ctx.onSizeErrorClause());
         return new SubtractStatement(operands, from, giving, rounded, null, onSizeError, locationOf(ctx));
     }
@@ -294,6 +314,12 @@ public class StatementBuilder {
                 subjects.add(Literal.figurative(Literal.FigurativeConstant.TRUE, locationOf(subj)));
             } else if (subj.FALSE_KW() != null) {
                 subjects.add(Literal.figurative(Literal.FigurativeConstant.FALSE, locationOf(subj)));
+            } else if (subj.classType() != null) {
+                // Class condition subject: identifier NOT? classType
+                Expression id = exprBuilder.buildIdentifier(subj.identifier());
+                subjects.add(new BinaryOp(id, BinaryOp.Operator.EQUAL,
+                        Literal.string("__CLASS_" + subj.classType().getText() + "__", locationOf(subj)),
+                        locationOf(subj)));
             } else {
                 subjects.add(exprBuilder.buildExpression(subj.expression()));
             }
@@ -326,6 +352,20 @@ public class StatementBuilder {
         }
         if (ctx.FALSE_KW() != null) {
             return Literal.figurative(Literal.FigurativeConstant.FALSE, locationOf(ctx));
+        }
+        if (ctx.classType() != null) {
+            // Class condition: identifier NUMERIC/ALPHABETIC (e.g., WHEN X NUMERIC)
+            Expression subject = exprBuilder.buildIdentifier(ctx.identifier());
+            return new BinaryOp(subject, BinaryOp.Operator.EQUAL,
+                    Literal.string("__CLASS_" + ctx.classType().getText() + "__", locationOf(ctx)),
+                    locationOf(ctx));
+        }
+        if (ctx.relationalOperator() != null && ctx.expression().size() >= 2) {
+            // Relational condition: expr relOp expr (e.g., WHEN X = SPACE)
+            Expression left = exprBuilder.buildExpression(ctx.expression(0));
+            Expression right = exprBuilder.buildExpression(ctx.expression(1));
+            BinaryOp.Operator op = exprBuilder.mapRelationalOperator(ctx.relationalOperator());
+            return new BinaryOp(left, op, right, locationOf(ctx));
         }
         if (ctx.expression() != null && !ctx.expression().isEmpty()) {
             return exprBuilder.buildExpression(ctx.expression(0));
@@ -484,7 +524,7 @@ public class StatementBuilder {
     }
 
     private Statement buildWrite(CobolParser.WriteStatementContext ctx) {
-        String recordName = ctx.IDENTIFIER().getText();
+        String recordName = ctx.identifier().getText();
         Expression from = ctx.expression() != null
                 ? exprBuilder.buildExpression(ctx.expression()) : null;
         List<Statement> invalidKey = ctx.invalidKeyClause() != null
@@ -572,23 +612,28 @@ public class StatementBuilder {
     private Statement buildInspect(CobolParser.InspectStatementContext ctx) {
         Expression target = exprBuilder.buildIdentifier(ctx.identifier());
         if (ctx.inspectOp() instanceof CobolParser.InspectTallyingContext tallyingCtx) {
-            Expression counter = exprBuilder.buildIdentifier(tallyingCtx.identifier());
+            // Multi-target TALLYING: each inspectTallyingTarget has its own counter + FOR clauses
+            // For now, build using the first target for backward compatibility
+            var tallyTargets = tallyingCtx.inspectTallyingTarget();
+            Expression counter = exprBuilder.buildIdentifier(tallyTargets.get(0).identifier());
             List<InspectStatement.TallyFor> forClauses = new ArrayList<>();
-            for (var clause : tallyingCtx.inspectTallyingClause()) {
-                InspectStatement.TallyMode mode = clause.CHARACTERS() != null
-                        ? InspectStatement.TallyMode.CHARACTERS
-                        : clause.LEADING() != null
-                        ? InspectStatement.TallyMode.LEADING
-                        : InspectStatement.TallyMode.ALL;
-                Expression value = clause.CHARACTERS() != null || clause.expression().isEmpty()
-                        ? null
-                        : exprBuilder.buildExpression(clause.expression(0));
-                forClauses.add(new InspectStatement.TallyFor(
-                        mode,
-                        value,
-                        buildBoundary(clause, true),
-                        buildBoundary(clause, false)
-                ));
+            for (var tallyTarget : tallyTargets) {
+                for (var clause : tallyTarget.inspectTallyingClause()) {
+                    InspectStatement.TallyMode mode = clause.CHARACTERS() != null
+                            ? InspectStatement.TallyMode.CHARACTERS
+                            : clause.LEADING() != null
+                            ? InspectStatement.TallyMode.LEADING
+                            : InspectStatement.TallyMode.ALL;
+                    Expression value = clause.CHARACTERS() != null || clause.expression().isEmpty()
+                            ? null
+                            : exprBuilder.buildExpression(clause.expression(0));
+                    forClauses.add(new InspectStatement.TallyFor(
+                            mode,
+                            value,
+                            buildBoundary(clause, true),
+                            buildBoundary(clause, false)
+                    ));
+                }
             }
             return new InspectStatement(
                     target,
@@ -851,11 +896,11 @@ public class StatementBuilder {
 
     private Statement buildAlter(CobolParser.AlterStatementContext ctx) {
         List<AlterStatement.Alteration> alterations = new ArrayList<>();
-        // Grammar: ALTER (IDENTIFIER TO (PROCEED TO)? IDENTIFIER)+
-        // Identifiers come in pairs: from, to
-        var ids = ctx.IDENTIFIER();
-        for (int i = 0; i + 1 < ids.size(); i += 2) {
-            alterations.add(new AlterStatement.Alteration(ids.get(i).getText(), ids.get(i + 1).getText()));
+        // Grammar: ALTER (procedureName TO (PROCEED TO)? procedureName)+
+        // procedureNames come in pairs: from, to
+        var names = ctx.procedureName();
+        for (int i = 0; i + 1 < names.size(); i += 2) {
+            alterations.add(new AlterStatement.Alteration(names.get(i).getText(), names.get(i + 1).getText()));
         }
         return new AlterStatement(alterations, locationOf(ctx));
     }

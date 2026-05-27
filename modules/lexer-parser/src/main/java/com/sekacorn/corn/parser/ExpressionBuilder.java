@@ -330,7 +330,7 @@ public class ExpressionBuilder {
         return new BinaryOp(left, op, right, locationOf(ctx));
     }
 
-    private BinaryOp.Operator mapRelationalOperator(CobolParser.RelationalOperatorContext ctx) {
+    BinaryOp.Operator mapRelationalOperator(CobolParser.RelationalOperatorContext ctx) {
         boolean negated = ctx.NOT() != null;
         boolean hasEqual = ctx.EQUAL() != null || ctx.EQUAL_WORD() != null;
         boolean hasGreater = ctx.GREATER() != null || ctx.GREATER_WORD() != null;

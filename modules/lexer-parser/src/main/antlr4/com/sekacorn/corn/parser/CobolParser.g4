@@ -59,12 +59,12 @@ programName
     ;
 
 identificationParagraph
-    : AUTHOR DOT? idParagraphSentence+           # authorParagraph
-    | DATE_WRITTEN DOT? idParagraphSentence+     # dateWrittenParagraph
-    | DATE_COMPILED DOT? idParagraphSentence+    # dateCompiledParagraph
-    | INSTALLATION DOT? idParagraphSentence+     # installationParagraph
-    | SECURITY DOT? idParagraphSentence+         # securityParagraph
-    | REMARKS DOT? idParagraphSentence+          # remarksParagraph
+    : AUTHOR DOT? idParagraphSentence*           # authorParagraph
+    | DATE_WRITTEN DOT? idParagraphSentence*     # dateWrittenParagraph
+    | DATE_COMPILED DOT? idParagraphSentence*    # dateCompiledParagraph
+    | INSTALLATION DOT? idParagraphSentence*     # installationParagraph
+    | SECURITY DOT? idParagraphSentence*         # securityParagraph
+    | REMARKS DOT? idParagraphSentence*          # remarksParagraph
     ;
 
 idParagraphSentence
@@ -129,7 +129,7 @@ ioControlParagraph
     ;
 
 ioControlSentence
-    : (~(DOT | DATA | PROCEDURE | FILE | WORKING_STORAGE))+ DOT
+    : (~(DOT | DATA | PROCEDURE | WORKING_STORAGE))+ DOT
     ;
 
 fileControlParagraph
@@ -467,19 +467,29 @@ moveStatement
 addStatement
     : ADD (CORRESPONDING | CORR) identifier TO identifier
       roundedClause? onSizeErrorClause? notSizeErrorClause? END_ADD?
-    | ADD expression+ TO identifier+
-      givingClause? roundedClause? onSizeErrorClause? notSizeErrorClause? END_ADD?
+    | ADD expression+ TO expression givingClause
+      onSizeErrorClause? notSizeErrorClause? END_ADD?
+    | ADD expression+ TO addTarget+
+      onSizeErrorClause? notSizeErrorClause? END_ADD?
     | ADD expression+ givingClause
-      roundedClause? onSizeErrorClause? notSizeErrorClause? END_ADD?
+      onSizeErrorClause? notSizeErrorClause? END_ADD?
+    ;
+
+addTarget
+    : identifier roundedClause?
     ;
 
 subtractStatement
     : SUBTRACT (CORRESPONDING | CORR) identifier FROM identifier
       roundedClause? onSizeErrorClause? notSizeErrorClause? END_SUBTRACT?
-    | SUBTRACT expression+ FROM identifier+
-      givingClause? roundedClause? onSizeErrorClause? notSizeErrorClause? END_SUBTRACT?
+    | SUBTRACT expression+ FROM subtractTarget+
+      onSizeErrorClause? notSizeErrorClause? END_SUBTRACT?
     | SUBTRACT expression+ FROM expression givingClause
       roundedClause? onSizeErrorClause? notSizeErrorClause? END_SUBTRACT?
+    ;
+
+subtractTarget
+    : identifier roundedClause?
     ;
 
 multiplyStatement
@@ -558,11 +568,12 @@ evaluateStatement
 evaluateSubject
     : TRUE_KW
     | FALSE_KW
+    | identifier NOT? classType
     | expression
     ;
 
 evaluateWhenClause
-    : WHEN evaluateCondition (ALSO evaluateCondition)*
+    : (WHEN evaluateCondition (ALSO evaluateCondition)*)+
       statement+
     ;
 
@@ -570,7 +581,9 @@ evaluateCondition
     : ANY
     | TRUE_KW
     | FALSE_KW
-    | NOT? expression (THRU expression)?
+    | NOT? identifier NOT? classType
+    | NOT? expression relationalOperator expression
+    | NOT? expression ((THRU | THROUGH) expression)?
     ;
 
 evaluateWhenOther
@@ -609,8 +622,7 @@ goToStatement
     ;
 
 procedureName
-    : IDENTIFIER
-    | INTEGERLITERAL
+    : (IDENTIFIER | INTEGERLITERAL) ((IN | OF) (IDENTIFIER | INTEGERLITERAL))*
     ;
 
 // ─── STOP / EXIT / CONTINUE / GOBACK ───
@@ -643,7 +655,7 @@ openStatement
     ;
 
 openFileClause
-    : (INPUT | OUTPUT | I_O | EXTEND) IDENTIFIER+
+    : (INPUT | OUTPUT | I_O | EXTEND) IDENTIFIER+ REVERSED? (WITH? NO REWIND)?
     ;
 
 closeStatement
@@ -686,7 +698,7 @@ notInvalidKeyClause
     ;
 
 writeStatement
-    : WRITE IDENTIFIER (FROM expression)?
+    : WRITE identifier (FROM expression)?
       writeAdvancingClause?
       atEndOfPageClause?
       notAtEndOfPageClause?
@@ -769,12 +781,16 @@ inspectStatement
     ;
 
 inspectOp
-    : TALLYING identifier FOR inspectTallyingClause+
+    : TALLYING inspectTallyingTarget+
       (REPLACING inspectReplacingClause+)?                # inspectTallying
     | REPLACING inspectReplacingClause+                   # inspectReplacing
     | CONVERTING expression TO expression
       (BEFORE INITIAL_KW? expression)?
       (AFTER INITIAL_KW? expression)?                     # inspectConverting
+    ;
+
+inspectTallyingTarget
+    : identifier FOR inspectTallyingClause+
     ;
 
 inspectTallyingClause
@@ -874,7 +890,7 @@ initializeCategory
 // ─── ALTER ───
 
 alterStatement
-    : ALTER (IDENTIFIER TO (PROCEED TO)? IDENTIFIER)+
+    : ALTER (procedureName TO (PROCEED TO)? procedureName)+
     ;
 
 // ─── CANCEL ───

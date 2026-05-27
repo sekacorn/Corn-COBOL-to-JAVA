@@ -4,7 +4,7 @@
 
 [![CI](https://github.com/sekacorn/corn-cobol-to-java/actions/workflows/ci.yml/badge.svg)](https://github.com/sekacorn/corn-cobol-to-java/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-Evaluation-blue.svg)](LICENSE)
-[![NIST Conformance](https://img.shields.io/badge/NIST%20CCVS85-90.1%25-brightgreen.svg)](#nist-ccvs85-translation-coverage)
+[![NIST Conformance](https://img.shields.io/badge/NIST%20CCVS85-93.5%25-brightgreen.svg)](#nist-ccvs85-conformance)
 
 ---
 
@@ -138,9 +138,8 @@ Corn helps turn COBOL migration from a vague consulting project into a measurabl
 
 ### Implemented Today
 
-- **Standards-oriented COBOL parser** targeting ANSI-85 with 90.1% NIST CCVS85 translation coverage
-- **374 / 415 NIST CCVS85 programs passing parse + Java generation**
-- **Deterministic Java code generation**
+- **Standards-oriented COBOL parser** targeting ANSI-85 with 93.5% NIST CCVS85 conformance (388/415 tests passing, 10 categories at 85%+, 7 at 100%)
+- **Deterministic Java code generation** — same input always produces same output
 - **Full pipeline**: parse, IR, generate, compile, execute, validate
 - **31 COBOL statement types**
 - **508-compliant demo UI**
@@ -289,6 +288,7 @@ Current public evaluation coverage:
 
 | Category | Pass | Total | Rate |
 |----------|------|-------|------|
+<<<<<<< HEAD
 | IC — Inter-program Communication | 47 | 47 | **100%** |
 | IF — Intrinsic Functions | 45 | 45 | **100%** |
 | SM — Source Management | 13 | 13 | **100%** |
@@ -304,6 +304,23 @@ Current public evaluation coverage:
 | CM — Communication | 0 | 9 | 0.0% |
 | EX — EXEC | 0 | 1 | 0.0% |
 | **Total** | **374** | **415** | **90.1%** |
+=======
+| IC (Inter-program Communication) | 47 | 47 | **100%** |
+| IF (Intrinsic Functions) | 45 | 45 | **100%** |
+| SM (Source Management) | 13 | 13 | **100%** |
+| RL (Relative I/O) | 26 | 26 | **100%** |
+| IX (Indexed I/O) | 29 | 29 | **100%** |
+| ST (Sort/Merge) | 25 | 25 | **100%** |
+| SG (Segmentation) | 13 | 13 | **100%** |
+| SQ (Sequential I/O) | 83 | 84 | **98.8%** |
+| NC (Nucleus) | 88 | 95 | **92.6%** |
+| DB (Debug) | 13 | 15 | **86.7%** |
+| OB (Obsolete) | 6 | 7 | **85.7%** |
+| RW (Report Writer) | 0 | 6 | 0.0% |
+| CM (Communication) | 0 | 9 | 0.0% |
+| EX (EXEC) | 0 | 1 | 0.0% |
+| **Total** | **388** | **415** | **93.5%** |
+>>>>>>> d3bc5ce (Raise NIST CCVS85 conformance to 93.5% (388/415) — ST, SG at 100%)
 
 > These results measure successful parse + Java code generation. Runtime semantic equivalence is validated separately where expected-output fixtures are available.
 
@@ -347,6 +364,7 @@ Known limitations:
 
 | Phase | Focus | Status |
 |-------|-------|--------|
+<<<<<<< HEAD
 | **Core Pipeline** | Parse, IR, code generation, runtime, CLI | Shipped |
 | **Demo Platform** | Web UI, REST API, portfolio tools, cost tools | Shipped |
 | **NIST 75%+** | Grammar expansion, nested programs, EXTERNAL / GLOBAL | Achieved |
@@ -355,6 +373,17 @@ Known limitations:
 | **Semantic Analysis** | Type checking, data flow, dead code detection | Private platform |
 | **Enterprise Features** | EXEC CICS, EXEC SQL, COMP-3 dialects, multi-program analysis | Private platform |
 | **Production Platform** | Rust-based high-performance engine and cloud deployment | Private platform |
+=======
+| **Core Pipeline** | Parse, IR, codegen, runtime, CLI | Shipped |
+| **Demo Platform** | Web UI, REST API, portfolio/cost tools | Shipped |
+| **NIST 75%+** | Grammar expansion, nested programs, EXTERNAL/GLOBAL | Achieved (77.1%) |
+| **NIST 85%+** | Intrinsic functions, COPY/REPLACE preprocessing | Achieved (85.5%) |
+| **NIST 90%+** | Abbreviated conditions, compound relational operators, qualified refs | Achieved (90.1%) |
+| **NIST 93%+** | EVALUATE enhancements, INSPECT multi-target, per-target ROUNDED, OPEN/CLOSE options | Achieved (93.5%) |
+| **Semantic Analysis** | Type checking, data flow, dead code detection | Private Repo |
+| **Enterprise Features** | EXEC CICS, EXEC SQL, COMP-3 dialects, multi-program | Private Repo |
+| **Production Platform** | Rust-based high-performance engine, cloud deployment | Private Repo |
+>>>>>>> d3bc5ce (Raise NIST CCVS85 conformance to 93.5% (388/415) — ST, SG at 100%)
 
 ---
 
