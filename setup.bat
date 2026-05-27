@@ -1,39 +1,53 @@
 @echo off
 REM ============================================================================
-REM Corn COBOL-to-Java Compiler - Windows Setup Script
-REM Author: Sekacorn
-REM Created: 2026-03-14
-REM License: Corn Evaluation License - See LICENSE
-REM Copyright (c) 2025-2026 Cornmeister LLC. All rights reserved.
+REM Corn COBOL-to-Java Compiler - Windows Setup Check
 REM ============================================================================
 
-set "SCRIPT_DIR=%~dp0"
-if "%SCRIPT_DIR:~-1%"=="\" set "SCRIPT_DIR=%SCRIPT_DIR:~0,-1%"
+setlocal
+set "PROJECT_ROOT=%~dp0"
+if "%PROJECT_ROOT:~-1%"=="\" set "PROJECT_ROOT=%PROJECT_ROOT:~0,-1%"
+cd /d "%PROJECT_ROOT%"
 
-set "JAVA_HOME=C:\Program Files\OpenLogic\jdk-21.0.8.9-hotspot"
-set "MAVEN_HOME=C:\Program Files\apache-maven-3.8.8"
-set "MAVEN_REPO_LOCAL=%SCRIPT_DIR%\.m2\repository"
-set "PATH=%JAVA_HOME%\bin;%MAVEN_HOME%\bin;%PATH%"
+echo ===============================================
+echo  Corn COBOL-to-Java Compiler - Setup Check
+echo ===============================================
+echo.
 
-if not exist "%JAVA_HOME%" (
-    echo ERROR: JAVA_HOME does not exist: %JAVA_HOME%
+where java >nul 2>nul
+if errorlevel 1 (
+    echo ERROR: Java 21+ is required and java was not found in PATH.
+    echo Install a JDK, then reopen this terminal.
     exit /b 1
 )
 
-if not exist "%MAVEN_HOME%" (
-    echo ERROR: MAVEN_HOME does not exist: %MAVEN_HOME%
+where javac >nul 2>nul
+if errorlevel 1 (
+    echo ERROR: A full JDK is required and javac was not found in PATH.
     exit /b 1
 )
 
-echo Environment configured for Corn COBOL-to-Java
-echo JAVA_HOME=%JAVA_HOME%
-echo MAVEN_HOME=%MAVEN_HOME%
-echo MAVEN_REPO_LOCAL=%MAVEN_REPO_LOCAL%
+where mvn >nul 2>nul
+if errorlevel 1 (
+    echo ERROR: Maven is required and mvn was not found in PATH.
+    exit /b 1
+)
+
+echo Java runtime:
+java -version 2>&1
 echo.
-call java -version
+echo Java compiler:
+javac -version
 echo.
+echo Maven:
 call mvn -version
 echo.
-echo This shell is now configured.
-echo To keep these variables in your current cmd session, run:
-echo   call setup.bat
+echo Project root:
+echo   %PROJECT_ROOT%
+echo.
+echo Setup looks ready.
+echo.
+echo Next steps:
+echo   build.bat
+echo   run.bat
+echo.
+exit /b 0
