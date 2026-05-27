@@ -12,6 +12,12 @@ public final class CodeBuffer {
     private final StringBuilder content = new StringBuilder();
     private int indentLevel;
     private static final String INDENT_UNIT = "    ";
+    private static final String[] INDENT_CACHE = new String[16];
+    static {
+        for (int i = 0; i < INDENT_CACHE.length; i++) {
+            INDENT_CACHE[i] = INDENT_UNIT.repeat(i);
+        }
+    }
     private final Set<String> imports = new TreeSet<>();
     private final Set<String> classFields = new TreeSet<>();
 
@@ -29,7 +35,18 @@ public final class CodeBuffer {
     }
 
     public CodeBuffer line(String fmt, Object... args) {
-        content.append(currentIndent()).append(String.format(fmt, args)).append("\n");
+        content.append(currentIndent());
+        // Fast path: avoid String.format overhead for common 1-2 arg patterns
+        if (args.length == 1 && fmt.indexOf('%') >= 0) {
+            int pct = fmt.indexOf('%');
+            if (pct >= 0 && pct + 1 < fmt.length() && fmt.charAt(pct + 1) == 's'
+                    && fmt.indexOf('%', pct + 1) < 0) {
+                content.append(fmt, 0, pct).append(args[0]).append(fmt, pct + 2, fmt.length());
+                content.append("\n");
+                return this;
+            }
+        }
+        content.append(String.format(fmt, args)).append("\n");
         return this;
     }
 
@@ -102,6 +119,9 @@ public final class CodeBuffer {
     }
 
     private String currentIndent() {
+        if (indentLevel >= 0 && indentLevel < INDENT_CACHE.length) {
+            return INDENT_CACHE[indentLevel];
+        }
         return INDENT_UNIT.repeat(indentLevel);
     }
 }

@@ -365,13 +365,27 @@ public class CobolPreprocessor {
 
     /**
      * Find the end of a statement (period not inside quotes).
+     * Handles doubled quotes (COBOL escaped quotes: "" inside "...", '' inside '...').
      */
     private int findStatementEnd(String text, int from) {
-        boolean inQ = false;
+        boolean inDouble = false;
+        boolean inSingle = false;
         for (int i = from; i < text.length(); i++) {
             char c = text.charAt(i);
-            if (c == '"' || c == '\'') inQ = !inQ;
-            if (c == '.' && !inQ) {
+            if (c == '"' && !inSingle) {
+                if (inDouble && i + 1 < text.length() && text.charAt(i + 1) == '"') {
+                    i++; // skip doubled quote inside double-quoted string
+                } else {
+                    inDouble = !inDouble;
+                }
+            } else if (c == '\'' && !inDouble) {
+                if (inSingle && i + 1 < text.length() && text.charAt(i + 1) == '\'') {
+                    i++; // skip doubled quote inside single-quoted string
+                } else {
+                    inSingle = !inSingle;
+                }
+            }
+            if (c == '.' && !inDouble && !inSingle) {
                 // Decimal point in numeric literal: period preceded by digit and
                 // followed by digit — not a statement terminator
                 if (i + 1 < text.length() && Character.isDigit(text.charAt(i + 1))

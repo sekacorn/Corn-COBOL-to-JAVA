@@ -53,7 +53,7 @@ public final class PictureAnalyzer {
                 int closeIdx = pic.indexOf(')', i + 2);
                 if (closeIdx > 0) {
                     int count = Integer.parseInt(pic.substring(i + 2, closeIdx).trim());
-                    result.append(String.valueOf(c).repeat(count));
+                    for (int j = 0; j < count; j++) result.append(c);
                     i = closeIdx + 1;
                     continue;
                 }

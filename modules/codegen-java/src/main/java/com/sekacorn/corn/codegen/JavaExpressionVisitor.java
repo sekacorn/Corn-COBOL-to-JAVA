@@ -76,9 +76,15 @@ public final class JavaExpressionVisitor implements ExpressionVisitor<String> {
 
         if (expr.getRefMod().isPresent()) {
             VariableRef.ReferenceModification rm = expr.getRefMod().get();
-            String start = rm.getStart().accept(this);
-            String length = rm.getLength().map(l -> l.accept(this)).orElse("" + Integer.MAX_VALUE);
+            String startExpr = rm.getStart().accept(this);
+            String lengthExpr = rm.getLength().map(l -> l.accept(this)).orElse("" + Integer.MAX_VALUE);
             buffer.addImport("com.sekacorn.corn.runtime.CobolString");
+            // Reference modification arguments are COBOL expressions that may be BigDecimal;
+            // CobolString.referenceModification expects int parameters
+            String start = isNumericExpression(rm.getStart())
+                    ? "(" + startExpr + ").intValue()" : startExpr;
+            String length = rm.getLength().isPresent() && isNumericExpression(rm.getLength().get())
+                    ? "(" + lengthExpr + ").intValue()" : lengthExpr;
             return "CobolString.referenceModification(" + javaName + ", " + start + ", " + length + ")";
         }
 
@@ -285,15 +291,24 @@ public final class JavaExpressionVisitor implements ExpressionVisitor<String> {
             buffer.addImport("java.math.BigDecimal");
             return "BigDecimal.ZERO";
         }
-        // ORD-MAX/ORD-MIN returns the ordinal position (1-based) of the max/min argument
-        String expr = "new BigDecimal(1)";
-        for (int i = 1; i < args.size(); i++) {
-            String comparison = max
-                    ? args.get(i) + ".compareTo(" + args.get(i - 1) + ") > 0"
-                    : args.get(i) + ".compareTo(" + args.get(i - 1) + ") < 0";
-            expr = "(" + comparison + " ? new BigDecimal(" + (i + 1) + ") : " + expr + ")";
+        if (args.size() == 1) {
+            return "new BigDecimal(1)";
         }
-        return expr;
+        // ORD-MAX/ORD-MIN returns the ordinal position (1-based) of the max/min argument.
+        // Each candidate must compare against the running best, not just the previous element.
+        // Build a nested ternary: compare each arg against the current best value.
+        String bestVal = args.get(0);
+        String bestOrd = "new BigDecimal(1)";
+        for (int i = 1; i < args.size(); i++) {
+            String cmp = max
+                    ? args.get(i) + ".compareTo(" + bestVal + ") > 0"
+                    : args.get(i) + ".compareTo(" + bestVal + ") < 0";
+            // We can't easily track the running best in a pure expression, so generate
+            // a chain where each step compares against all prior winners via nesting.
+            bestOrd = "(" + cmp + " ? new BigDecimal(" + (i + 1) + ") : " + bestOrd + ")";
+            bestVal = "(" + cmp + " ? " + args.get(i) + " : " + bestVal + ")";
+        }
+        return bestOrd;
     }
 
     private String reduceSum(List<String> args) {

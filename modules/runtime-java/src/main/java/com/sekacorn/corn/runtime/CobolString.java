@@ -74,15 +74,15 @@ public final class CobolString {
             String digits = source.replaceAll("[^0-9.]", "");
             String signChar = negative ? "-" : "+";
 
-            // Pad digits first, then place sign at the correct position
             Justification justify = ctx.justified() ? Justification.RIGHT : Justification.LEFT;
-            String padded = move(digits, ctx.targetLength() - 1, justify);
 
+            // SEPARATE CHARACTER reserves 1 position for the sign character itself
+            // Non-SEPARATE embeds the sign in the leading/trailing digit (no extra position)
             return switch (ctx.sign()) {
-                case LEADING -> signChar + padded;
-                case TRAILING -> padded + signChar;
-                case LEADING_SEPARATE -> signChar + " " + move(digits, ctx.targetLength() - 2, justify);
-                case TRAILING_SEPARATE -> move(digits, ctx.targetLength() - 2, justify) + " " + signChar;
+                case LEADING -> signChar + move(digits, ctx.targetLength() - 1, justify);
+                case TRAILING -> move(digits, ctx.targetLength() - 1, justify) + signChar;
+                case LEADING_SEPARATE -> signChar + move(digits, ctx.targetLength() - 1, justify);
+                case TRAILING_SEPARATE -> move(digits, ctx.targetLength() - 1, justify) + signChar;
             };
         }
 
@@ -102,19 +102,6 @@ public final class CobolString {
             }
         }
         return true;
-    }
-
-    private static String applySignPosition(String value, MoveContext.SignPosition sign) {
-        boolean negative = value.startsWith("-");
-        String digits = value.replaceAll("[^0-9.]", "");
-        String signChar = negative ? "-" : "+";
-
-        return switch (sign) {
-            case LEADING -> signChar + digits;
-            case TRAILING -> digits + signChar;
-            case LEADING_SEPARATE -> signChar + " " + digits;
-            case TRAILING_SEPARATE -> digits + " " + signChar;
-        };
     }
 
     /**
@@ -138,7 +125,7 @@ public final class CobolString {
         if (characters) {
             return range.length();
         }
-        if (subject == null || target == null || target.isEmpty()) {
+        if (target == null || target.isEmpty()) {
             return 0;
         }
         if (leading) {

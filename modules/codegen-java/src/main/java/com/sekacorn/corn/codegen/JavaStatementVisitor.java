@@ -443,6 +443,7 @@ public final class JavaStatementVisitor implements StatementVisitor<Void> {
     }
 
     private void generateVaryingLoop(PerformStatement.VaryingClause vc, PerformStatement stmt) {
+        buffer.addImport("java.math.BigDecimal");
         String varName = JavaNameMapper.toFieldName(vc.getVariable());
         String from = vc.getFrom().accept(exprVisitor);
         String by = vc.getBy() != null ? vc.getBy().accept(exprVisitor) : "new BigDecimal(\"1\")";

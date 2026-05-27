@@ -170,6 +170,8 @@ public final class CobolMath {
 
     /**
      * COBOL DIVIDE with remainder support.
+     * Per ANSI-85, remainder = dividend - (integer-quotient × divisor),
+     * where integer-quotient is the quotient truncated to zero decimal places.
      */
     public static DivideResult divideWithRemainder(BigDecimal a, BigDecimal b,
                                                     int targetScale, int targetPrecision,
@@ -177,28 +179,32 @@ public final class CobolMath {
         if (b.compareTo(BigDecimal.ZERO) == 0) {
             return new DivideResult(BigDecimal.ZERO, BigDecimal.ZERO, true);
         }
-        BigDecimal quotient = a.divide(b, targetScale + 2, roundingMode);
-        BigDecimal truncatedQuotient = quotient.setScale(0, RoundingMode.DOWN);
+        // Compute quotient with extra precision for accurate remainder
+        BigDecimal fullQuotient = a.divide(b, Math.max(targetScale, 10) + 2, RoundingMode.DOWN);
+        // Integer part of quotient for remainder calculation (always truncated toward zero)
+        BigDecimal truncatedQuotient = fullQuotient.setScale(0, RoundingMode.DOWN);
         BigDecimal remainder = a.subtract(truncatedQuotient.multiply(b));
-        Result qResult = checkAndScale(quotient, targetScale, targetPrecision);
+        // Scale the quotient for the target field
+        Result qResult = checkAndScale(fullQuotient, targetScale, targetPrecision);
         return new DivideResult(qResult.value(), remainder, qResult.sizeError());
     }
 
     /**
      * Context-aware DIVIDE with remainder.
+     * Per ANSI-85, remainder = dividend - (integer-quotient × divisor).
      */
     public static DivideResult divideWithRemainder(BigDecimal a, BigDecimal b,
                                                     ArithmeticContext ctx) {
         if (b.compareTo(BigDecimal.ZERO) == 0) {
             return new DivideResult(BigDecimal.ZERO, BigDecimal.ZERO, true);
         }
-        java.math.RoundingMode javaMode = ctx.rounded()
-                ? toJavaRoundingMode(ctx.roundMode())
-                : java.math.RoundingMode.DOWN;
-        BigDecimal quotient = a.divide(b, ctx.targetScale() + 2, javaMode);
-        BigDecimal truncatedQuotient = quotient.setScale(0, RoundingMode.DOWN);
+        // Always use DOWN for the intermediate quotient; rounding is applied separately
+        int extraScale = Math.max(ctx.targetScale(), 10) + 2;
+        BigDecimal fullQuotient = a.divide(b, extraScale, java.math.RoundingMode.DOWN);
+        // Integer part for remainder (always truncated toward zero)
+        BigDecimal truncatedQuotient = fullQuotient.setScale(0, RoundingMode.DOWN);
         BigDecimal remainder = a.subtract(truncatedQuotient.multiply(b));
-        Result qResult = applyContext(quotient, ctx);
+        Result qResult = applyContext(fullQuotient, ctx);
         return new DivideResult(qResult.value(), remainder, qResult.sizeError());
     }
 
@@ -265,10 +271,19 @@ public final class CobolMath {
 
     /**
      * Apply ArithmeticContext: round if ROUNDED, then check size.
+     * When ROUNDED is active, the value is already at the correct scale
+     * after rounding — only the size (precision) check is needed.
      */
     private static Result applyContext(BigDecimal value, ArithmeticContext ctx) {
         if (ctx.rounded()) {
             value = round(value, ctx.targetScale(), ctx.roundMode());
+            // Value is already at targetScale after rounding — only check precision
+            int precision = value.precision();
+            boolean sizeError = precision > ctx.targetPrecision();
+            if (sizeError) {
+                return new Result(truncate(value, ctx.targetScale(), ctx.targetPrecision()), true);
+            }
+            return new Result(value, false);
         }
         return checkAndScale(value, ctx.targetScale(), ctx.targetPrecision());
     }
