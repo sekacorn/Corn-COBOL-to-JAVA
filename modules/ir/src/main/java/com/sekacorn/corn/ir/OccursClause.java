@@ -28,8 +28,8 @@ public final class OccursClause {
             @JsonProperty("maxOccurs") Integer maxOccurs,
             @JsonProperty("dependingOn") String dependingOn,
             @JsonProperty("indexedBy") String indexedBy) {
-        if (minOccurs < 1) {
-            throw new IllegalArgumentException("minOccurs must be >= 1");
+        if (minOccurs < 0) {
+            throw new IllegalArgumentException("minOccurs must be >= 0");
         }
         this.minOccurs = minOccurs;
         this.maxOccurs = maxOccurs;

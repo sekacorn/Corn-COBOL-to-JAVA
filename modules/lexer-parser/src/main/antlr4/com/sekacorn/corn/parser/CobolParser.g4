@@ -151,11 +151,11 @@ fileControlOption
     | ALTERNATE RECORD? KEY? IS? qualifiedDataRef
       (WITH? DUPLICATES)?                              # alternateKeyOption
     | RELATIVE KEY? IS? qualifiedDataRef               # relativeKeyOption
-    | FILE_STATUS IS? statusVar=IDENTIFIER (OF IDENTIFIER)*   # fileStatusOption
-    | STATUS IS? statusVar=IDENTIFIER (OF IDENTIFIER)*        # statusOption
+    | FILE_STATUS IS? statusVar=IDENTIFIER ((OF | IN) IDENTIFIER)*   # fileStatusOption
+    | STATUS IS? statusVar=IDENTIFIER ((OF | IN) IDENTIFIER)*        # statusOption
     | RESERVE INTEGERLITERAL (AREA | AREAS)?            # reserveOption
     | RECORD DELIMITER IS? IDENTIFIER                   # recordDelimiterOption
-    | PADDING CHARACTER? IS? IDENTIFIER                 # paddingOption
+    | PADDING CHARACTER? IS? (IDENTIFIER | STRINGLITERAL) # paddingOption
     | fileOrganization                                 # standaloneOrganization
     ;
 
@@ -195,7 +195,7 @@ fileDescriptionEntry
 
 fdClause
     : RECORD IS? VARYING IN? SIZE?
-      (FROM INTEGERLITERAL TO INTEGERLITERAL CHARACTERS?)?
+      (FROM? INTEGERLITERAL)? (TO INTEGERLITERAL)? CHARACTERS?
       (DEPENDING ON? identifier)?
     | RECORD (CONTAINS? INTEGERLITERAL (TO INTEGERLITERAL)? CHARACTERS?)?
     | BLOCK (CONTAINS? INTEGERLITERAL (TO INTEGERLITERAL)? (RECORDS | CHARACTERS)?)?
@@ -360,12 +360,16 @@ useStatement
     : USE (GLOBAL?)
       AFTER? STANDARD? (EXCEPTION | ERROR)
       PROCEDURE ON? (IDENTIFIER+ | INPUT | OUTPUT | I_O | EXTEND)         # useAfterError
-    | USE FOR? DEBUGGING ON?
-      (ALL REFERENCES? OF? qualifiedDataRef | IDENTIFIER+)                # useForDebugging
+    | USE FOR? DEBUGGING ON? debugTarget+                                  # useForDebugging
+    ;
+
+debugTarget
+    : ALL REFERENCES? OF? qualifiedDataRef
+    | qualifiedDataRef
     ;
 
 qualifiedDataRef
-    : IDENTIFIER (OF IDENTIFIER)*
+    : IDENTIFIER ((OF | IN) IDENTIFIER)*
     ;
 
 procedureUsingClause
@@ -588,13 +592,13 @@ performOption
     : expression TIMES                                 # performTimes
     | (WITH? TEST (BEFORE | AFTER))? UNTIL condition   # performUntil
     | (WITH? TEST (BEFORE | AFTER))?
-      VARYING IDENTIFIER FROM expression
+      VARYING identifier FROM expression
       BY expression UNTIL condition
       afterVaryingClause*                              # performVarying
     ;
 
 afterVaryingClause
-    : AFTER IDENTIFIER FROM expression
+    : AFTER identifier FROM expression
       BY expression UNTIL condition
     ;
 
@@ -719,7 +723,7 @@ deleteStatement
 
 startStatement
     : START_KW IDENTIFIER
-      (KEY IS? NOT? (EQUAL TO? | EQUAL_WORD TO? | GREATER THAN? | GREATER_WORD THAN? | LESS THAN? | LESS_WORD THAN? | GREATER_EQUAL | LESS_EQUAL)? identifier)?
+      (KEY IS? NOT? (GREATER_WORD THAN? OR EQUAL_WORD TO? | LESS_WORD THAN? OR EQUAL_WORD TO? | EQUAL TO? | EQUAL_WORD TO? | GREATER THAN? | GREATER_WORD THAN? | LESS THAN? | LESS_WORD THAN? | GREATER_EQUAL | LESS_EQUAL)? identifier)?
       invalidKeyClause?
       notInvalidKeyClause?
       END_START?
@@ -839,7 +843,8 @@ searchWhenClause
 // ─── SET ───
 
 setStatement
-    : SET identifier+ TO (TRUE_KW | FALSE_KW)                # setToTrueStatement
+    : SET identifier+ TO (ON | OFF)                            # setOnOffStatement
+    | SET identifier+ TO (TRUE_KW | FALSE_KW)                 # setToTrueStatement
     | SET identifier+ TO expression                            # setToValueStatement
     | SET identifier+ (UP | DOWN) BY expression                # setUpDownStatement
     ;
@@ -937,28 +942,22 @@ combinableCondition
     ;
 
 simpleCondition
-    : classCondition
-    | relationCondition
-    | LPAREN condition RPAREN
-    | conditionNameCondition
+    : expression IS? NOT? classType                              # classCondition
+    | expression relationalOperator expression                   # relationCondition
+    | relationalOperator expression                              # abbreviatedRelation
+    | LPAREN condition RPAREN                                    # parenCondition
+    | expression                                                 # conditionNameOrValue
     ;
 
-conditionNameCondition
-    : identifier
-    ;
-
-classCondition
-    : identifier IS? NOT?
-      (NUMERIC | ALPHABETIC | ALPHABETIC_LOWER | ALPHABETIC_UPPER
-      | POSITIVE | NEGATIVE | ZERO | ZEROS | ZEROES)
-    ;
-
-relationCondition
-    : expression relationalOperator expression
+classType
+    : NUMERIC | ALPHABETIC | ALPHABETIC_LOWER | ALPHABETIC_UPPER
+    | POSITIVE | NEGATIVE | ZERO | ZEROS | ZEROES
     ;
 
 relationalOperator
-    : (IS | ARE)? NOT? ( GREATER_WORD THAN? | LESS_WORD THAN?
+    : (IS | ARE)? NOT? ( GREATER_WORD THAN? OR EQUAL_WORD TO?
+      | LESS_WORD THAN? OR EQUAL_WORD TO?
+      | GREATER_WORD THAN? | LESS_WORD THAN?
       | EQUAL_WORD TO? | EQUAL TO?
       | GREATER_EQUAL | LESS_EQUAL | GREATER | LESS | EQUAL)
     ;

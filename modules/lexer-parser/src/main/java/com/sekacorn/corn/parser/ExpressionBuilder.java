@@ -213,22 +213,35 @@ public class ExpressionBuilder {
         return new FunctionCall(funcName, args, locationOf(ctx));
     }
 
+    // ── Abbreviated condition expansion state ──
+    // In COBOL, `IF A = 1 OR 2` means `IF A = 1 OR A = 2`.
+    // We track the last subject and operator so abbreviated forms can reuse them.
+    private Expression lastSubject;
+    private BinaryOp.Operator lastRelOp;
+
     /**
      * Build a condition (used by IF, PERFORM UNTIL, etc.).
+     * Handles abbreviated combined relation conditions per ANSI-85 §6.3.4.1.
      */
     public Expression buildCondition(CobolParser.ConditionContext ctx) {
+        // Save and restore abbreviated state around each condition build,
+        // so nested conditions (e.g., in parentheses) don't leak state.
+        Expression savedSubject = lastSubject;
+        BinaryOp.Operator savedOp = lastRelOp;
+
         List<CobolParser.CombinableConditionContext> parts = ctx.combinableCondition();
         Expression result = buildCombinableCondition(parts.get(0));
 
         for (int i = 1; i < parts.size(); i++) {
-            // Get the logical operator between conditions
-            // The tokens are interleaved: cond0 AND cond1 OR cond2 ...
             Token opToken = (Token) ctx.getChild(2 * i - 1).getPayload();
             BinaryOp.Operator op = opToken.getType() == CobolLexer.AND
                     ? BinaryOp.Operator.AND : BinaryOp.Operator.OR;
             Expression right = buildCombinableCondition(parts.get(i));
             result = new BinaryOp(result, op, right, locationOf(ctx));
         }
+
+        lastSubject = savedSubject;
+        lastRelOp = savedOp;
         return result;
     }
 
@@ -241,43 +254,69 @@ public class ExpressionBuilder {
     }
 
     private Expression buildSimpleCondition(CobolParser.SimpleConditionContext ctx) {
-        if (ctx.classCondition() != null) {
-            return buildClassCondition(ctx.classCondition());
+        if (ctx instanceof CobolParser.ClassConditionContext classCtx) {
+            return buildClassCondition(classCtx);
         }
-        if (ctx.relationCondition() != null) {
-            return buildRelationCondition(ctx.relationCondition());
+        if (ctx instanceof CobolParser.RelationConditionContext relCtx) {
+            return buildRelationCondition(relCtx);
         }
-        if (ctx.condition() != null) {
-            return buildCondition(ctx.condition());
+        if (ctx instanceof CobolParser.AbbreviatedRelationContext abbrevCtx) {
+            return buildAbbreviatedRelation(abbrevCtx);
         }
-        if (ctx.conditionNameCondition() != null) {
-            return buildConditionNameCondition(ctx.conditionNameCondition());
+        if (ctx instanceof CobolParser.ParenConditionContext parenCtx) {
+            return buildCondition(parenCtx.condition());
         }
-        throw new IllegalStateException("Unknown simple condition type");
+        if (ctx instanceof CobolParser.ConditionNameOrValueContext cnCtx) {
+            return buildConditionNameOrValue(cnCtx);
+        }
+        throw new IllegalStateException("Unknown simple condition type: " + ctx.getClass().getName());
     }
 
     /**
-     * Build a condition name reference (88-level condition used as boolean).
-     * Returns a ConditionExpr with CONDITION_NAME type wrapping a VariableRef.
+     * Handle an abbreviated relation condition — just `relOp expr` or just `expr`.
+     * Reuses lastSubject and/or lastRelOp from a prior relation condition.
      */
-    private Expression buildConditionNameCondition(CobolParser.ConditionNameConditionContext ctx) {
-        Expression subject = buildIdentifier(ctx.identifier());
-        return new ConditionExpr(subject, ConditionExpr.ConditionType.CONDITION_NAME, false, locationOf(ctx));
+    private Expression buildAbbreviatedRelation(CobolParser.AbbreviatedRelationContext ctx) {
+        BinaryOp.Operator op = mapRelationalOperator(ctx.relationalOperator());
+        Expression right = buildExpression(ctx.expression());
+        // Update lastRelOp for further abbreviation
+        lastRelOp = op;
+        if (lastSubject != null) {
+            return new BinaryOp(lastSubject, op, right, locationOf(ctx));
+        }
+        // Fallback — shouldn't happen in valid COBOL
+        return new BinaryOp(right, op, right, locationOf(ctx));
+    }
+
+    /**
+     * Handle conditionName (88-level), or an abbreviated value
+     * where only the value expression appears (reuses lastSubject + lastRelOp).
+     */
+    private Expression buildConditionNameOrValue(CobolParser.ConditionNameOrValueContext ctx) {
+        Expression expr = buildExpression(ctx.expression());
+        // If we have a prior subject and operator, this is an abbreviated condition
+        if (lastSubject != null && lastRelOp != null) {
+            return new BinaryOp(lastSubject, lastRelOp, expr, locationOf(ctx));
+        }
+        // Otherwise treat as a condition-name reference (88-level)
+        return new ConditionExpr(expr, ConditionExpr.ConditionType.CONDITION_NAME, false, locationOf(ctx));
     }
 
     private Expression buildClassCondition(CobolParser.ClassConditionContext ctx) {
-        Expression subject = buildIdentifier(ctx.identifier());
+        Expression subject = buildExpression(ctx.expression());
         boolean negated = ctx.NOT() != null;
+        var classTypeCtx = ctx.classType();
         ConditionExpr.ConditionType type;
 
-        if (ctx.NUMERIC() != null) type = ConditionExpr.ConditionType.NUMERIC;
-        else if (ctx.ALPHABETIC() != null) type = ConditionExpr.ConditionType.ALPHABETIC;
-        else if (ctx.ALPHABETIC_LOWER() != null) type = ConditionExpr.ConditionType.ALPHABETIC_LOWER;
-        else if (ctx.ALPHABETIC_UPPER() != null) type = ConditionExpr.ConditionType.ALPHABETIC_UPPER;
-        else if (ctx.POSITIVE() != null) type = ConditionExpr.ConditionType.POSITIVE;
-        else if (ctx.NEGATIVE() != null) type = ConditionExpr.ConditionType.NEGATIVE;
+        if (classTypeCtx.NUMERIC() != null) type = ConditionExpr.ConditionType.NUMERIC;
+        else if (classTypeCtx.ALPHABETIC() != null) type = ConditionExpr.ConditionType.ALPHABETIC;
+        else if (classTypeCtx.ALPHABETIC_LOWER() != null) type = ConditionExpr.ConditionType.ALPHABETIC_LOWER;
+        else if (classTypeCtx.ALPHABETIC_UPPER() != null) type = ConditionExpr.ConditionType.ALPHABETIC_UPPER;
+        else if (classTypeCtx.POSITIVE() != null) type = ConditionExpr.ConditionType.POSITIVE;
+        else if (classTypeCtx.NEGATIVE() != null) type = ConditionExpr.ConditionType.NEGATIVE;
         else type = ConditionExpr.ConditionType.ZERO;
 
+        // A class condition does not set lastSubject/lastRelOp — it has no relational operator
         return new ConditionExpr(subject, type, negated, locationOf(ctx));
     }
 
@@ -285,6 +324,9 @@ public class ExpressionBuilder {
         Expression left = buildExpression(ctx.expression(0));
         Expression right = buildExpression(ctx.expression(1));
         BinaryOp.Operator op = mapRelationalOperator(ctx.relationalOperator());
+        // Store subject and operator for abbreviated conditions that follow
+        lastSubject = left;
+        lastRelOp = op;
         return new BinaryOp(left, op, right, locationOf(ctx));
     }
 
@@ -293,13 +335,19 @@ public class ExpressionBuilder {
         boolean hasEqual = ctx.EQUAL() != null || ctx.EQUAL_WORD() != null;
         boolean hasGreater = ctx.GREATER() != null || ctx.GREATER_WORD() != null;
         boolean hasLess = ctx.LESS() != null || ctx.LESS_WORD() != null;
-        if (hasEqual && !hasGreater && !hasLess) {
+        if (hasGreater && hasEqual) {
+            return negated ? BinaryOp.Operator.LESS_THAN : BinaryOp.Operator.GREATER_EQUAL;
+        }
+        if (hasLess && hasEqual) {
+            return negated ? BinaryOp.Operator.GREATER_THAN : BinaryOp.Operator.LESS_EQUAL;
+        }
+        if (hasEqual) {
             return negated ? BinaryOp.Operator.NOT_EQUAL : BinaryOp.Operator.EQUAL;
         }
-        if (hasGreater && !hasEqual) {
+        if (hasGreater) {
             return negated ? BinaryOp.Operator.LESS_EQUAL : BinaryOp.Operator.GREATER_THAN;
         }
-        if (hasLess && !hasEqual) {
+        if (hasLess) {
             return negated ? BinaryOp.Operator.GREATER_EQUAL : BinaryOp.Operator.LESS_THAN;
         }
         if (ctx.GREATER_EQUAL() != null) {

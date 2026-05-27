@@ -4,7 +4,7 @@
 
 [![CI](https://github.com/sekacorn/corn-cobol-to-java/actions/workflows/ci.yml/badge.svg)](https://github.com/sekacorn/corn-cobol-to-java/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-Evaluation-blue.svg)](LICENSE)
-[![NIST Conformance](https://img.shields.io/badge/NIST%20CCVS85-77.1%25-brightgreen.svg)](#nist-ccvs85-conformance)
+[![NIST Conformance](https://img.shields.io/badge/NIST%20CCVS85-90.1%25-brightgreen.svg)](#nist-ccvs85-conformance)
 
 ---
 
@@ -69,7 +69,7 @@ Step-through execution trace with variable state tracking. Side-by-side COBOL/Ja
 
 ### Implemented Today
 
-- **Standards-oriented COBOL parser** targeting ANSI-85 with 77.1% NIST CCVS85 conformance (320/415 tests passing)
+- **Standards-oriented COBOL parser** targeting ANSI-85 with 90.1% NIST CCVS85 conformance (374/415 tests passing, 7 categories at 85%+, 5 at 100%)
 - **Deterministic Java code generation** — same input always produces same output
 - **Full pipeline**: parse, IR, generate, compile, execute, validate
 - **31 COBOL statement types** including arithmetic, control flow, file I/O, string operations, INSPECT, SORT/MERGE, and inter-program communication
@@ -214,20 +214,20 @@ The parser is validated against the US government **NIST CCVS85** COBOL-85 compi
 | Category | Pass | Total | Rate |
 |----------|------|-------|------|
 | IC (Inter-program Communication) | 47 | 47 | **100%** |
+| IF (Intrinsic Functions) | 45 | 45 | **100%** |
+| SM (Source Management) | 13 | 13 | **100%** |
+| RL (Relative I/O) | 26 | 26 | **100%** |
+| IX (Indexed I/O) | 29 | 29 | **100%** |
 | SQ (Sequential I/O) | 78 | 84 | **92.9%** |
-| RL (Relative I/O) | 23 | 26 | **88.5%** |
-| IX (Indexed I/O) | 25 | 29 | **86.2%** |
-| NC (Nucleus) | 75 | 95 | **78.9%** |
-| DB (Debug) | 11 | 15 | **73.3%** |
-| ST (Sort/Merge) | 18 | 25 | **72.0%** |
-| IF (Intrinsic Functions) | 28 | 45 | 62.2% |
-| SG (Segmentation) | 8 | 13 | 61.5% |
+| ST (Sort/Merge) | 23 | 25 | **92.0%** |
+| SG (Segmentation) | 12 | 13 | **92.3%** |
+| NC (Nucleus) | 84 | 95 | **88.4%** |
+| DB (Debug) | 13 | 15 | **86.7%** |
 | OB (Obsolete) | 4 | 7 | 57.1% |
-| SM (Source Management) | 3 | 13 | 23.1% |
 | RW (Report Writer) | 0 | 6 | 0.0% |
 | CM (Communication) | 0 | 9 | 0.0% |
 | EX (EXEC) | 0 | 1 | 0.0% |
-| **Total** | **320** | **415** | **77.1%** |
+| **Total** | **374** | **415** | **90.1%** |
 
 > These results measure successful parse + Java code generation. Conformance rate is actively improving with each release.
 
@@ -251,7 +251,8 @@ The parser is validated against the US government **NIST CCVS85** COBOL-85 compi
 | **Core Pipeline** | Parse, IR, codegen, runtime, CLI | Shipped |
 | **Demo Platform** | Web UI, REST API, portfolio/cost tools | Shipped |
 | **NIST 75%+** | Grammar expansion, nested programs, EXTERNAL/GLOBAL | Achieved (77.1%) |
-| **NIST 85%+** | Intrinsic functions, COPY/REPLACE preprocessing, abbreviated conditions | In Progress |
+| **NIST 85%+** | Intrinsic functions, COPY/REPLACE preprocessing | Achieved (85.5%) |
+| **NIST 90%+** | Abbreviated conditions, compound relational operators, qualified refs | Achieved (90.1%) |
 | **Semantic Analysis** | Type checking, data flow, dead code detection | Private Repo |
 | **Enterprise Features** | EXEC CICS, EXEC SQL, COMP-3 dialects, multi-program | Private Repo |
 | **Production Platform** | Rust-based high-performance engine, cloud deployment | Private Repo |

@@ -152,6 +152,7 @@ SIZE            : 'SIZE' ;
 ERROR           : 'ERROR' ;
 NOT             : 'NOT' ;
 ON              : 'ON' ;
+OFF             : 'OFF' ;
 END_ADD         : 'END-ADD' ;
 END_SUBTRACT    : 'END-SUBTRACT' ;
 END_MULTIPLY    : 'END-MULTIPLY' ;

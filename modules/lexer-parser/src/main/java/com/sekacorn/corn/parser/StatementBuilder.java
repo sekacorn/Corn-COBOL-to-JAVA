@@ -388,7 +388,7 @@ public class StatementBuilder {
                     null, condition, null, testPos, inlineStatements, locationOf(parentCtx));
         }
         if (option instanceof CobolParser.PerformVaryingContext varying) {
-            String varName = varying.IDENTIFIER().getText();
+            String varName = varying.identifier().IDENTIFIER().getText();
             Expression from = exprBuilder.buildExpression(varying.expression(0));
             Expression by = exprBuilder.buildExpression(varying.expression(1));
             Expression untilCond = exprBuilder.buildCondition(varying.condition());
@@ -724,6 +724,17 @@ public class StatementBuilder {
     // ─── SET / INITIALIZE ───
 
     private Statement buildSet(CobolParser.SetStatementContext ctx) {
+        if (ctx instanceof CobolParser.SetOnOffStatementContext onOffCtx) {
+            List<Expression> targets = new ArrayList<>();
+            for (var id : onOffCtx.identifier()) {
+                targets.add(exprBuilder.buildIdentifier(id));
+            }
+            Literal.FigurativeConstant fc = onOffCtx.ON() != null
+                    ? Literal.FigurativeConstant.TRUE
+                    : Literal.FigurativeConstant.FALSE;
+            Expression value = Literal.figurative(fc, locationOf(ctx));
+            return new SetStatement(targets, value, locationOf(ctx));
+        }
         if (ctx instanceof CobolParser.SetToTrueStatementContext trueCtx) {
             List<Expression> targets = new ArrayList<>();
             for (var id : trueCtx.identifier()) {

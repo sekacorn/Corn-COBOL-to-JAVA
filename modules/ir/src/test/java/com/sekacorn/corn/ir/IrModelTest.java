@@ -307,9 +307,9 @@ class IrModelTest {
         }
 
         @Test
-        @DisplayName("minOccurs must be >= 1")
+        @DisplayName("minOccurs must be >= 0")
         void minOccursValidation() {
-            assertThatThrownBy(() -> OccursClause.fixed(0))
+            assertThatThrownBy(() -> OccursClause.fixed(-1))
                     .isInstanceOf(IllegalArgumentException.class);
         }
 

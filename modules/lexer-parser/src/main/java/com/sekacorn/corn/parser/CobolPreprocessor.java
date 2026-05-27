@@ -425,10 +425,16 @@ public class CobolPreprocessor {
 
     // ─── Phase 2: Fixed-format processing ─────────────────────────
 
+    private static final Pattern ID_COMMENT_PARA = Pattern.compile(
+            "(?i)^\\s*(AUTHOR|DATE-WRITTEN|DATE-COMPILED|INSTALLATION|SECURITY|REMARKS)\\s*\\.");
+    private static final Pattern ID_COMMENT_END = Pattern.compile(
+            "(?i)^\\s*(PROGRAM-ID\\s*\\.|((ENVIRONMENT|DATA|PROCEDURE|IDENTIFICATION|ID)\\s+DIVISION))");
+
     private List<String> processFixedFormat(List<String> rawLines) {
         List<String> outputLines = new ArrayList<>();
         StringBuilder continuationBuffer = null;
         int continuationStartLine = -1;
+        boolean inIdCommentParagraph = false;
 
         for (int i = 0; i < rawLines.size(); i++) {
             String raw = rawLines.get(i);
@@ -463,6 +469,18 @@ public class CobolPreprocessor {
             }
 
             String codeArea = extractCodeArea(raw);
+
+            // Track ID DIVISION comment paragraphs to sanitize stray quotes
+            if (indicator != '-') {
+                if (ID_COMMENT_END.matcher(codeArea).find()) {
+                    inIdCommentParagraph = false;
+                } else if (ID_COMMENT_PARA.matcher(codeArea).find()) {
+                    inIdCommentParagraph = true;
+                }
+            }
+            if (inIdCommentParagraph) {
+                codeArea = codeArea.replace('"', ' ').replace('\'', ' ');
+            }
 
             if (indicator == '-') {
                 if (continuationBuffer != null) {
