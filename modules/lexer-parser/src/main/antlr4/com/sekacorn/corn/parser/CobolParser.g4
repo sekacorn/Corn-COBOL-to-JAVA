@@ -271,7 +271,7 @@ picClause
     ;
 
 valueClause
-    : VALUE IS? (PLUS | MINUS)? literal
+    : VALUE IS? (PLUS | MINUS)? (literal | IDENTIFIER)
     ;
 
 usageClause
@@ -324,7 +324,7 @@ synchronizedClause
     ;
 
 valueSpec
-    : (PLUS | MINUS)? literal ((THRU | THROUGH) (PLUS | MINUS)? literal)?
+    : (PLUS | MINUS)? (literal | IDENTIFIER) ((THRU | THROUGH) (PLUS | MINUS)? (literal | IDENTIFIER))?
     ;
 
 commaOrSpace
@@ -601,7 +601,7 @@ afterVaryingClause
 // ─── GO TO ───
 
 goToStatement
-    : GO TO? procedureName+ (DEPENDING ON? identifier)?
+    : GO TO? procedureName* (DEPENDING ON? identifier)?
     ;
 
 procedureName
@@ -847,7 +847,23 @@ setStatement
 // ─── INITIALIZE ───
 
 initializeStatement
-    : INITIALIZE identifier+
+    : INITIALIZE identifier+ initializeReplacing*
+    ;
+
+initializeReplacing
+    : REPLACING initializeReplacingTarget+
+    ;
+
+initializeReplacingTarget
+    : initializeCategory DATA? BY expression
+    ;
+
+initializeCategory
+    : ALPHABETIC
+    | ALPHABETIC_LOWER
+    | ALPHABETIC_UPPER
+    | NUMERIC
+    | IDENTIFIER    // ALPHANUMERIC, ALPHANUMERIC-EDITED, NUMERIC-EDITED, DBCS, EGCS
     ;
 
 // ─── ALTER ───
@@ -882,7 +898,7 @@ mergeStatement
     ;
 
 sortKeyClause
-    : ON? (ASCENDING | DESCENDING) KEY? IS? IDENTIFIER+
+    : ON? (ASCENDING | DESCENDING) KEY? IS? qualifiedDataRef+
     ;
 
 sortInputClause

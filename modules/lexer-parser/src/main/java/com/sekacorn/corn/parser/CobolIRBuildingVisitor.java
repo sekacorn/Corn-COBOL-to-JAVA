@@ -277,7 +277,11 @@ public class CobolIRBuildingVisitor extends CobolParserBaseVisitor<Object> {
                 picture = PictureAnalyzer.analyze(picString);
             } else if (clause.valueClause() != null) {
                 String valueSign = clause.valueClause().MINUS() != null ? "-" : "";
-                value = valueSign + extractLiteralValue(clause.valueClause().literal());
+                if (clause.valueClause().literal() != null) {
+                    value = valueSign + extractLiteralValue(clause.valueClause().literal());
+                } else {
+                    value = valueSign + clause.valueClause().IDENTIFIER().getText();
+                }
             } else if (clause.usageClause() != null) {
                 usage = mapUsage(clause.usageClause().usageType());
             } else if (clause.signClause() != null) {
@@ -319,7 +323,11 @@ public class CobolIRBuildingVisitor extends CobolParserBaseVisitor<Object> {
                 picture = PictureAnalyzer.analyze(picString);
             } else if (clause.valueClause() != null) {
                 String valueSign = clause.valueClause().MINUS() != null ? "-" : "";
-                value = valueSign + extractLiteralValue(clause.valueClause().literal());
+                if (clause.valueClause().literal() != null) {
+                    value = valueSign + extractLiteralValue(clause.valueClause().literal());
+                } else {
+                    value = valueSign + clause.valueClause().IDENTIFIER().getText();
+                }
             } else if (clause.usageClause() != null) {
                 usage = mapUsage(clause.usageClause().usageType());
             } else if (clause.signClause() != null) {
@@ -347,8 +355,29 @@ public class CobolIRBuildingVisitor extends CobolParserBaseVisitor<Object> {
         String name = ctx.dataName().getText();
         List<ConditionName.ValueSpec> values = new ArrayList<>();
         for (var vs : ctx.valueSpec()) {
-            String val = extractLiteralValue(vs.literal(0));
-            String thruVal = vs.literal().size() > 1 ? extractLiteralValue(vs.literal(1)) : null;
+            // First value: literal or IDENTIFIER (for NIST XXXXX placeholders)
+            String val;
+            if (!vs.literal().isEmpty()) {
+                val = extractLiteralValue(vs.literal(0));
+            } else {
+                val = vs.IDENTIFIER(0).getText();
+            }
+            // Optional THRU value
+            String thruVal = null;
+            boolean hasThru = vs.THRU() != null || vs.THROUGH() != null;
+            if (hasThru) {
+                if (vs.literal().size() > 1) {
+                    thruVal = extractLiteralValue(vs.literal(1));
+                } else if (vs.literal().size() == 1 && !vs.IDENTIFIER().isEmpty()) {
+                    // First was literal, THRU value is IDENTIFIER
+                    thruVal = vs.IDENTIFIER(0).getText();
+                } else if (vs.IDENTIFIER().size() > 1) {
+                    thruVal = vs.IDENTIFIER(1).getText();
+                } else if (vs.literal().size() == 1) {
+                    // First was IDENTIFIER, THRU value is literal
+                    thruVal = extractLiteralValue(vs.literal(0));
+                }
+            }
             values.add(new ConditionName.ValueSpec(val, thruVal));
         }
         return new DataItemBuilder.FlatDataItem(

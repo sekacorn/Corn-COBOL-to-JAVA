@@ -768,8 +768,8 @@ public class StatementBuilder {
         String sortFile = ctx.IDENTIFIER(0).getText();
         List<String> keys = new ArrayList<>();
         for (var keyClause : ctx.sortKeyClause()) {
-            for (var id : keyClause.IDENTIFIER()) {
-                keys.add(id.getText());
+            for (var qdr : keyClause.qualifiedDataRef()) {
+                keys.add(qdr.IDENTIFIER(0).getText());
             }
         }
         List<String> inputFiles = new ArrayList<>();
@@ -797,8 +797,8 @@ public class StatementBuilder {
         String mergeFile = ctx.IDENTIFIER(0).getText();
         List<String> keys = new ArrayList<>();
         for (var keyClause : ctx.sortKeyClause()) {
-            for (var id : keyClause.IDENTIFIER()) {
-                keys.add(id.getText());
+            for (var qdr : keyClause.qualifiedDataRef()) {
+                keys.add(qdr.IDENTIFIER(0).getText());
             }
         }
         // MERGE USING files
